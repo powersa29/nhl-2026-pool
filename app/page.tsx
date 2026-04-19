@@ -1,30 +1,11 @@
 import { getParticipants } from '@/lib/db';
 import { fetchAllTeamStats, lookupStats } from '@/lib/nhl-api';
-import { TEAMS, PLAYERS, ROUNDS } from '@/lib/data';
+import { TEAMS } from '@/lib/data';
 import StandingsClient from '@/components/StandingsClient';
-import Ticker from '@/components/Ticker';
 import type { Participant } from '@/lib/db';
 
 export const revalidate = 600; // revalidate every 10 min
 
-function buildTicker(statsMap: Record<string, ReturnType<typeof lookupStats>>) {
-  const scorers = PLAYERS.filter(p => {
-    const s = lookupStats(statsMap as never, p.name);
-    return s && s.pts > 0;
-  }).slice(0, 40);
-
-  return scorers.slice(0, 20).map((p, i) => {
-    const s = lookupStats(statsMap as never, p.name);
-    return {
-      id: i,
-      player: p.name,
-      team: p.team,
-      kind: (i % 2 === 0 ? 'GOAL' : 'ASSIST') as 'GOAL' | 'ASSIST',
-      opp: TEAMS[(TEAMS.findIndex(t => t.abbr === p.team) + 1) % TEAMS.length].abbr,
-      time: `${Math.floor(i / 7) + 1}P ${i % 20}:${String(30 + i).padStart(2, '0')}`,
-    };
-  });
-}
 
 export default async function Home() {
   const [rawParticipants, statsMap] = await Promise.all([
@@ -44,7 +25,6 @@ export default async function Home() {
   participants.forEach((p, i) => { p.rank = i + 1; });
 
   const topScore = participants[0]?.total ?? 0;
-  const ticker = buildTicker(statsMap as never);
 
   return (
     <>
@@ -72,9 +52,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {ticker.length > 0 && <Ticker items={ticker} />}
-
-      <StandingsClient participants={participants} id="standings" />
+<StandingsClient participants={participants} id="standings" />
     </>
   );
 }
