@@ -1,11 +1,11 @@
 import RoundsClient from '@/components/RoundsClient';
 import { ROUNDS } from '@/lib/data';
-import { getRoundsConfig } from '@/lib/db';
+import { fetchPlayoffRounds } from '@/lib/nhl-rounds';
 
 export const revalidate = 300;
 
 export default async function RoundsPage() {
-  const saved = await getRoundsConfig().catch(() => null);
-  const rounds = (saved && saved.length > 0 ? saved : ROUNDS) as typeof ROUNDS;
+  const liveRounds = await fetchPlayoffRounds().catch(() => []);
+  const rounds = liveRounds.some(r => r.series.length > 0) ? liveRounds : ROUNDS;
   return <RoundsClient rounds={rounds} />;
 }
