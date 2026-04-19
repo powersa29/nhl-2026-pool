@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/power/Downloads/**)",
+      "Bash(unzip -l \"C:\\\\Users\\\\power\\\\Downloads\\\\Hockey pool.zip\")",
+      "Bash(npm --version)",
+      "Read(//c/Users/power/**)",
+      "Bash(npx create-next-app@latest nhl-pool --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --yes)",
+      "Bash(npm install *)",
+      "Bash(cp .env.local.example .env.local)",
+      "Bash(npm run *)",
+      "Bash(git --version)",
+      "Bash(gh --version)",
+      "Bash(git -C \"C:\\\\Users\\\\power\\\\nhl 2026 pool\" config user.name)",
+      "Bash(git -C \"C:\\\\Users\\\\power\\\\nhl 2026 pool\" config user.email)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp"
+    ]
+  }
+}
