@@ -1,4 +1,4 @@
-import { getParticipants } from '@/lib/db';
+import { getParticipants, getRoundsConfig } from '@/lib/db';
 import AdminClient from '@/components/AdminClient';
 
 export const dynamic = 'force-dynamic';
@@ -23,7 +23,10 @@ export default async function AdminPage({
     );
   }
 
-  const participants = await getParticipants().catch(() => []);
+  const [participants, savedRounds] = await Promise.all([
+    getParticipants().catch(() => []),
+    getRoundsConfig().catch(() => null),
+  ]);
 
-  return <AdminClient participants={participants} secret={secret} />;
+  return <AdminClient participants={participants} secret={secret} savedRounds={savedRounds as never} />;
 }

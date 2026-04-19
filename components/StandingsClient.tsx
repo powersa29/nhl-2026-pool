@@ -1,6 +1,5 @@
 'use client';
 import { useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Sparkline from './Sparkline';
 import type { Participant } from '@/lib/db';
@@ -16,17 +15,9 @@ function seededSpark(seed: number): number[] {
 }
 
 export default function StandingsClient({ participants, id }: { participants: Participant[]; id?: string }) {
-  const router = useRouter();
   const [sortKey, setSortKey] = useState<SortKey>('rank');
   const [sortDir, setSortDir] = useState(1);
   const [q, setQ] = useState('');
-  const [refreshing, setRefreshing] = useState(false);
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    router.refresh();
-    setTimeout(() => setRefreshing(false), 2000);
-  };
   const [filter, setFilter] = useState<'all' | 'top10'>('all');
 
   const sorted = useMemo(() => {
@@ -56,9 +47,6 @@ export default function StandingsClient({ participants, id }: { participants: Pa
         </div>
         <div className="lb-controls">
           <input className="input" placeholder="Search name…" value={q} onChange={e => setQ(e.target.value)} />
-          <button className="btn ghost" onClick={handleRefresh} disabled={refreshing} style={{ fontSize: 13, padding: '9px 14px' }}>
-            {refreshing ? 'Refreshing…' : '↻ Refresh'}
-          </button>
           <div className="seg">
             <button className={filter === 'all' ? 'on' : ''} onClick={() => setFilter('all')}>All</button>
             <button className={filter === 'top10' ? 'on' : ''} onClick={() => setFilter('top10')}>Top 10</button>

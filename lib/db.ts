@@ -53,3 +53,28 @@ export async function insertParticipant(name: string, roster: RosterPick[]): Pro
     return { error: String(e) };
   }
 }
+
+export async function getRoundsConfig(): Promise<object[] | null> {
+  try {
+    const { data, error } = await getClient()
+      .from('config')
+      .select('value')
+      .eq('key', 'rounds')
+      .single();
+    if (error || !data) return null;
+    return data.value as object[];
+  } catch {
+    return null;
+  }
+}
+
+export async function setRoundsConfig(rounds: object[]): Promise<{ error: string | null }> {
+  try {
+    const { error } = await getClient()
+      .from('config')
+      .upsert({ key: 'rounds', value: rounds }, { onConflict: 'key' });
+    return { error: error?.message ?? null };
+  } catch (e) {
+    return { error: String(e) };
+  }
+}
