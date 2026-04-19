@@ -13,7 +13,10 @@
       "Bash(gh --version)",
       "Bash(git -C \"C:\\\\Users\\\\power\\\\nhl 2026 pool\" config user.name)",
       "Bash(git -C \"C:\\\\Users\\\\power\\\\nhl 2026 pool\" config user.email)",
-      "mcp__Claude_in_Chrome__tabs_context_mcp"
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "mcp__Claude_in_Chrome__navigate",
+      "mcp__Claude_in_Chrome__computer",
+      "mcp__Claude_in_Chrome__tabs_create_mcp"
     ]
   }
 }
