@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
-import { getParticipants, insertParticipant } from '@/lib/db';
 import { createClient } from '@supabase/supabase-js';
+
+const ADMIN_SECRET = 'buffalosabres';
 
 function adminClient() {
   return createClient(
@@ -12,7 +13,7 @@ function adminClient() {
 
 export async function DELETE(req: NextRequest) {
   const secret = req.headers.get('x-admin-secret');
-  if (secret !== process.env.NEXT_PUBLIC_ADMIN_SECRET) {
+  if (secret !== ADMIN_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const { id } = await req.json();

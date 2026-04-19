@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { setRoundsConfig } from '@/lib/db';
 
+const ADMIN_SECRET = 'buffalosabres';
+
 export async function POST(req: NextRequest) {
   const secret = req.headers.get('x-admin-secret');
-  if (secret !== process.env.NEXT_PUBLIC_ADMIN_SECRET) {
+  if (secret !== ADMIN_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const body = await req.json();

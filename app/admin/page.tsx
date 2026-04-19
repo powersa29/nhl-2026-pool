@@ -3,15 +3,16 @@ import AdminClient from '@/components/AdminClient';
 
 export const dynamic = 'force-dynamic';
 
+const ADMIN_SECRET = 'buffalosabres';
+
 export default async function AdminPage({
   searchParams,
 }: {
   searchParams: Promise<{ secret?: string }>;
 }) {
   const { secret } = await searchParams;
-  const adminSecret = process.env.NEXT_PUBLIC_ADMIN_SECRET;
 
-  if (!adminSecret || secret !== adminSecret) {
+  if (secret !== ADMIN_SECRET) {
     return (
       <section className="card" style={{ maxWidth: 480, margin: '60px auto', textAlign: 'center' }}>
         <h2>Admin Access</h2>
@@ -28,5 +29,5 @@ export default async function AdminPage({
     getRoundsConfig().catch(() => null),
   ]);
 
-  return <AdminClient participants={participants} secret={secret} savedRounds={savedRounds as never} />;
+  return <AdminClient participants={participants} secret={ADMIN_SECRET} savedRounds={savedRounds as never} />;
 }
