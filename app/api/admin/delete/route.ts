@@ -12,7 +12,7 @@ function adminClient() {
 
 export async function DELETE(req: NextRequest) {
   const secret = req.headers.get('x-admin-secret');
-  if (secret !== process.env.ADMIN_SECRET) {
+  if (secret !== process.env.NEXT_PUBLIC_ADMIN_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const { id } = await req.json();

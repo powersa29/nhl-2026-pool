@@ -9,7 +9,7 @@ export default async function AdminPage({
   searchParams: Promise<{ secret?: string }>;
 }) {
   const { secret } = await searchParams;
-  const adminSecret = process.env.ADMIN_SECRET;
+  const adminSecret = process.env.NEXT_PUBLIC_ADMIN_SECRET;
 
   if (!adminSecret || secret !== adminSecret) {
     return (
