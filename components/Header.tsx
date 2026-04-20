@@ -42,7 +42,6 @@ export default function Header() {
         </div>
         <div>
           <div className="brand-name">NHL 2026 Playoff Pool</div>
-          <div className="brand-sub">Bragging rights · since forever</div>
         </div>
       </div>
 
