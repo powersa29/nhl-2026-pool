@@ -1,10 +1,18 @@
 import { NextResponse } from 'next/server';
-import { fetchAllTeamStats } from '@/lib/nhl-api';
-import { TEAMS } from '@/lib/data';
+import { fetchScores, todayDate, yesterdayDate } from '@/lib/nhl-scores';
 
-export const revalidate = 600;
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const statsMap = await fetchAllTeamStats(TEAMS.map(t => t.abbr));
-  return NextResponse.json(statsMap);
+  const today = todayDate();
+  const todayGames = await fetchScores(today);
+
+  if (todayGames.length > 0) {
+    const hasLive = todayGames.some(g => g.state === 'LIVE');
+    return NextResponse.json({ games: todayGames, date: today, live: hasLive });
+  }
+
+  const yesterday = yesterdayDate();
+  const yGames = await fetchScores(yesterday);
+  return NextResponse.json({ games: yGames, date: yesterday, live: false });
 }

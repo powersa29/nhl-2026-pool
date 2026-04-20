@@ -2,6 +2,7 @@ import { getParticipants } from '@/lib/db';
 import { fetchAllTeamStats, lookupStats } from '@/lib/nhl-api';
 import { TEAMS } from '@/lib/data';
 import StandingsClient from '@/components/StandingsClient';
+import ScoreTicker from '@/components/ScoreTicker';
 import type { Participant } from '@/lib/db';
 
 export const revalidate = 600; // revalidate every 10 min
@@ -52,7 +53,8 @@ export default async function Home() {
         </div>
       </section>
 
-<StandingsClient participants={participants} id="standings" />
+      <ScoreTicker />
+      <StandingsClient participants={participants} id="standings" />
     </>
   );
 }
