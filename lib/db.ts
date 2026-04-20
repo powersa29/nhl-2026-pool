@@ -21,6 +21,7 @@ export interface Participant {
   id: number;
   name: string;
   joined_at: string;
+  created_at: string;
   roster: RosterPick[];
   total?: number;
   rank?: number;

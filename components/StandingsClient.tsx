@@ -74,7 +74,7 @@ export default function StandingsClient({ participants, id }: { participants: Pa
                 <div className="td">
                   <div className="name-cell">
                     <div className="n">{p.name}</div>
-                    <div className="sub">Joined {new Date(p.joined_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · Entry #{p.id}</div>
+                    <div className="sub">Joined {new Date(p.created_at ?? p.joined_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · Entry #{p.id}</div>
                   </div>
                 </div>
                 <div className="td" style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 22 }}>{p.total ?? 0}</div>
