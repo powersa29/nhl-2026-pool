@@ -18,7 +18,7 @@ export interface PlayerStats {
 export type TeamStatsMap = Record<string, PlayerStats>;
 
 async function fetchTeamStats(teamAbbr: string): Promise<PlayerStats[]> {
-  const url = `${NHL_BASE}/club-stats/${teamAbbr}/${SEASON}/2`;
+  const url = `${NHL_BASE}/club-stats/${teamAbbr}/${SEASON}/3`;
   const res = await fetch(url, { next: { revalidate: 600 } });
   if (!res.ok) return [];
   const json = await res.json();
