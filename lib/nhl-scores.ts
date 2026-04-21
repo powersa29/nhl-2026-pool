@@ -39,11 +39,11 @@ export async function fetchScores(date: string): Promise<GameScore[]> {
 }
 
 export function todayDate(): string {
-  return new Date().toISOString().slice(0, 10);
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date());
 }
 
 export function yesterdayDate(): string {
   const d = new Date();
   d.setDate(d.getDate() - 1);
-  return d.toISOString().slice(0, 10);
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(d);
 }
