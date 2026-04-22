@@ -1,11 +1,15 @@
 -- Run this in Supabase SQL editor to set up the database.
 
 create table if not exists participants (
-  id         bigserial primary key,
-  name       text not null,
-  roster     jsonb not null default '[]',
-  created_at timestamptz not null default now()
+  id          bigserial primary key,
+  name        text not null,
+  roster      jsonb not null default '[]',
+  tiebreaker  integer,
+  created_at  timestamptz not null default now()
 );
+
+-- Run this if the table already exists (adds tiebreaker column):
+-- alter table participants add column if not exists tiebreaker integer;
 
 -- Allow anyone to read participants (public leaderboard).
 alter table participants enable row level security;

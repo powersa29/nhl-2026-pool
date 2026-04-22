@@ -23,6 +23,7 @@ export interface Participant {
   joined_at: string;
   created_at: string;
   roster: RosterPick[];
+  tiebreaker?: number | null;
   total?: number;
   rank?: number;
 }
@@ -49,6 +50,21 @@ export async function insertParticipant(name: string, roster: RosterPick[]): Pro
     const { error } = await getClient()
       .from('participants')
       .insert({ name, roster });
+    return { error: error?.message ?? null };
+  } catch (e) {
+    return { error: String(e) };
+  }
+}
+
+export async function updateParticipant(
+  id: number,
+  fields: { roster?: RosterPick[]; tiebreaker?: number | null; name?: string }
+): Promise<{ error: string | null }> {
+  try {
+    const { error } = await getClient()
+      .from('participants')
+      .update(fields)
+      .eq('id', id);
     return { error: error?.message ?? null };
   } catch (e) {
     return { error: String(e) };
