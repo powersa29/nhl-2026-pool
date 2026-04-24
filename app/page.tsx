@@ -5,7 +5,7 @@ import StandingsClient from '@/components/StandingsClient';
 import ScoreTicker from '@/components/ScoreTicker';
 import type { Participant } from '@/lib/db';
 
-export const revalidate = 600; // revalidate every 10 min
+export const revalidate = 60; // revalidate every 1 min
 
 
 export default async function Home() {
