@@ -77,36 +77,34 @@ export default function ScoreTicker() {
   return (
     <div style={{
       borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)',
-      background: 'var(--paper)', overflow: 'hidden', position: 'relative',
+      background: 'var(--paper)', position: 'relative',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <div style={{
-          padding: '8px 14px', fontSize: 11, fontWeight: 800, letterSpacing: 1,
-          color: data.live ? 'var(--red)' : 'var(--muted)',
-          borderRight: '1px solid var(--line)', whiteSpace: 'nowrap', flexShrink: 0,
-          background: 'var(--paper)',
-        }}>
-          {label}
-        </div>
-        <div style={{ overflow: 'hidden', flex: 1 }}>
-          <div
-            ref={animRef}
-            style={{
-              display: 'flex', gap: 10, padding: '8px 14px',
-              animation: data.games.length > 3 ? 'ticker-scroll 30s linear infinite' : undefined,
-              width: 'max-content',
-            }}
-          >
-            {data.games.map(g => <GameChip key={g.id} g={g} />)}
-            {data.games.length > 3 && data.games.map(g => <GameChip key={`r-${g.id}`} g={g} />)}
-          </div>
+      {/* Label row */}
+      <div style={{
+        padding: '4px 14px 0',
+        fontSize: 10, fontWeight: 800, letterSpacing: 1,
+        color: data.live ? 'var(--red)' : 'var(--muted)',
+      }}>
+        {label}
+      </div>
+      {/* Scrollable games row */}
+      <div style={{
+        overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch' as never,
+        scrollbarWidth: 'none' as never,
+      }}>
+        <div
+          ref={animRef}
+          style={{
+            display: 'flex', gap: 8, padding: '6px 14px 8px',
+            width: 'max-content',
+          }}
+        >
+          {data.games.map(g => <GameChip key={g.id} g={g} />)}
         </div>
       </div>
       <style>{`
-        @keyframes ticker-scroll {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
+        .ticker-scroll::-webkit-scrollbar { display: none; }
       `}</style>
     </div>
   );
