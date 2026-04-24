@@ -1,4 +1,4 @@
-import { getParticipants } from '@/lib/db';
+import { getParticipants, getRankingsSnapshot } from '@/lib/db';
 import { fetchAllTeamStats, lookupStats } from '@/lib/nhl-api';
 import { TEAMS } from '@/lib/data';
 import StandingsClient from '@/components/StandingsClient';
@@ -9,9 +9,10 @@ export const revalidate = 60; // revalidate every 1 min
 
 
 export default async function Home() {
-  const [rawParticipants, statsMap] = await Promise.all([
+  const [rawParticipants, statsMap, rankSnapshot] = await Promise.all([
     getParticipants().catch(() => [] as Participant[]),
     fetchAllTeamStats(TEAMS.map(t => t.abbr)).catch(() => ({})),
+    getRankingsSnapshot().catch(() => null),
   ]);
 
   // Augment participants with live scores
@@ -54,7 +55,7 @@ export default async function Home() {
       </section>
 
       <ScoreTicker />
-      <StandingsClient participants={participants} id="standings" />
+      <StandingsClient participants={participants} rankSnapshot={rankSnapshot} id="standings" />
     </>
   );
 }

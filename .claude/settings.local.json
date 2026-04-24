@@ -42,7 +42,21 @@
       "Bash(curl -s \"https://nhl-2026-pool-4qok.vercel.app/api/scores\")",
       "Bash(powershell -command \"Expand-Archive -Path 'C:/Users/power/Downloads/scores2.zip' -DestinationPath 'C:/Users/power/Downloads/scores2_ex' -Force\")",
       "Bash(curl -s \"https://nhl-2026-pool-4qok.vercel.app/api/export\")",
-      "Bash(node extract_tiebreakers.js)"
+      "Bash(node extract_tiebreakers.js)",
+      "Bash(node \"C:/Users/power/Downloads/parse_steve_riggs.js\")",
+      "Bash(node \"C:/Users/power/Downloads/submit_steve_riggs.js\")",
+      "Bash(node \"C:/Users/power/Downloads/upload_tiebreakers.js\")",
+      "Bash(node \"C:/Users/power/Downloads/list_participants.js\")",
+      "Bash(node \"C:/Users/power/Downloads/find_tim_herman.js\")",
+      "Bash(node \"C:/Users/power/Downloads/submit_all_entries.js\")",
+      "Bash(node \"C:/Users/power/Downloads/parse_tim_herman3.js\")",
+      "Bash(node \"C:/Users/power/Downloads/submit_cam_john.js\")",
+      "Bash(node \"C:/Users/power/Downloads/submit_tim_herman2.js\")",
+      "Bash(node \"C:/Users/power/Downloads/fix_tim_herman.js\")",
+      "mcp__b6c92573-b002-4409-988e-cfbd7de268f8__search_threads",
+      "mcp__b6c92573-b002-4409-988e-cfbd7de268f8__get_thread",
+      "Bash(node \"C:/Users/power/Downloads/submit_new_entries.js\")",
+      "Bash(node \"C:/Users/power/Downloads/fix_evan_dlugosz.js\")"
     ]
   }
 }

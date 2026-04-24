@@ -95,3 +95,29 @@ export async function setRoundsConfig(rounds: object[]): Promise<{ error: string
     return { error: String(e) };
   }
 }
+
+// Rankings snapshot: Record<participantId, rank>
+export async function getRankingsSnapshot(): Promise<Record<number, number> | null> {
+  try {
+    const { data, error } = await getClient()
+      .from('config')
+      .select('value')
+      .eq('key', 'rankings_snapshot')
+      .single();
+    if (error || !data) return null;
+    return data.value as Record<number, number>;
+  } catch {
+    return null;
+  }
+}
+
+export async function setRankingsSnapshot(snapshot: Record<number, number>): Promise<{ error: string | null }> {
+  try {
+    const { error } = await getClient()
+      .from('config')
+      .upsert({ key: 'rankings_snapshot', value: snapshot }, { onConflict: 'key' });
+    return { error: error?.message ?? null };
+  } catch (e) {
+    return { error: String(e) };
+  }
+}

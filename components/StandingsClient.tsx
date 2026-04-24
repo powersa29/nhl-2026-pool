@@ -1,20 +1,11 @@
 'use client';
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import Sparkline from './Sparkline';
 import type { Participant } from '@/lib/db';
 
 type SortKey = 'rank' | 'name' | 'total';
 
-function seededSpark(seed: number): number[] {
-  let s = seed;
-  return Array.from({ length: 8 }, () => {
-    s = (s * 9301 + 49297) % 233280;
-    return (s / 233280) * 10;
-  });
-}
-
-export default function StandingsClient({ participants, id }: { participants: Participant[]; id?: string }) {
+export default function StandingsClient({ participants, rankSnapshot, id }: { participants: Participant[]; rankSnapshot?: Record<number, number> | null; id?: string }) {
   const [sortKey, setSortKey] = useState<SortKey>('rank');
   const [sortDir, setSortDir] = useState(1);
   const [q, setQ] = useState('');
@@ -59,12 +50,11 @@ export default function StandingsClient({ participants, id }: { participants: Pa
         <div className={`th ${sortKey === 'name' ? 'active' : ''}`} onClick={() => toggleSort('name')}>Participant <span className="arrow">{arrow('name')}</span></div>
         <div className={`th ${sortKey === 'total' ? 'active' : ''}`} onClick={() => toggleSort('total')}>Points <span className="arrow">{arrow('total')}</span></div>
         <div className="th col-gp">Picks</div>
-        <div className="th">Change</div>
-        <div className="th col-spark">Trend</div>
+        <div className="th">Move</div>
 
         {sorted.map(p => {
-          const data = seededSpark(p.id * 17);
-          const change = +((data[7] - data[6]).toFixed(1));
+          const prevRank = rankSnapshot?.[p.id];
+          const move = prevRank != null ? prevRank - (p.rank ?? 0) : null;
           return (
             <Link key={p.id} href={`/participant/${p.id}`} style={{ display: 'contents' }}>
               <div className={`row ${p.rank === 1 ? 'top1' : ''}`} style={{ display: 'contents', cursor: 'pointer' }}>
@@ -80,6 +70,17 @@ export default function StandingsClient({ participants, id }: { participants: Pa
                 <div className="td" style={{ fontFamily: 'var(--display)', fontWeight: 800, fontSize: 22 }}>{p.total ?? 0}</div>
                 <div className="td col-gp" style={{ fontSize: 13, color: 'var(--muted)' }}>
                   {(p.roster ?? []).length}/16
+                </div>
+                <div className="td">
+                  {move === null ? (
+                    <span style={{ fontSize: 13, color: 'var(--muted)' }}>—</span>
+                  ) : move === 0 ? (
+                    <span style={{ fontSize: 13, color: 'var(--muted)' }}>—</span>
+                  ) : (
+                    <span style={{ fontSize: 13, fontWeight: 700, color: move > 0 ? 'var(--green)' : 'var(--red)' }}>
+                      {move > 0 ? '▲' : '▼'} {Math.abs(move)}
+                    </span>
+                  )}
                 </div>
                 <div className="td">
                   <span style={{ fontSize: 13, fontWeight: 700, color: change > 0 ? 'var(--green)' : change < 0 ? 'var(--red)' : 'var(--muted)' }}>
