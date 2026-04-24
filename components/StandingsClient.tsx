@@ -82,14 +82,6 @@ export default function StandingsClient({ participants, rankSnapshot, id }: { pa
                     </span>
                   )}
                 </div>
-                <div className="td">
-                  <span style={{ fontSize: 13, fontWeight: 700, color: change > 0 ? 'var(--green)' : change < 0 ? 'var(--red)' : 'var(--muted)' }}>
-                    {change > 0 ? '▲' : change < 0 ? '▼' : '—'} {Math.abs(change)}
-                  </span>
-                </div>
-                <div className="td col-spark">
-                  <Sparkline data={data} color="var(--red)" />
-                </div>
               </div>
             </Link>
           );
