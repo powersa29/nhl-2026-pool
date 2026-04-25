@@ -2,7 +2,7 @@ export default function RulesPage() {
   const rules = [
     { t: 'Pick 16', b: 'Build a 16-player roster with 1 goalie, 6 defensemen, and 9 forwards. Each pick must come from a different playoff team.' },
     { t: 'One per team', b: "You can only select one player from each of the 16 playoff teams. If your guy gets eliminated, you live with it." },
-    { t: 'Scoring', b: 'Goals and assists count 1 point each. Power play goals, shorthanded goals, and overtime goals each earn a bonus point. Goalie wins are worth 2 pts, losses −1, shutouts +2. All stats pulled live from NHL.com.' },
+    { t: 'Scoring', b: 'Goals and assists count 1 point each for all players including goalies. Power play goals, shorthanded goals, and overtime goals each earn a bonus point. Goalie wins are worth 2 pts, losses −1, shutouts +2. All stats pulled live from NHL.com.' },
   ];
   const scoring = [
     { n: 1, l: 'Goal' },

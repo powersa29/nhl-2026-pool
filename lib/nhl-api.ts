@@ -9,7 +9,7 @@ export interface PlayerStats {
   ppg: number;
   shg: number;
   otg: number;
-  pts: number;      // skaters: g+a+ppg+shg+otg; goalies: wins*2 - losses + shutouts*2
+  pts: number;      // skaters: g+a+ppg+shg+otg; goalies: wins*2 - losses + shutouts*2 + g + a
   wins?: number;
   losses?: number;
   shutouts?: number;
@@ -43,11 +43,13 @@ async function fetchTeamStats(teamAbbr: string): Promise<PlayerStats[]> {
     const wins     = g.wins ?? 0;
     const losses   = g.losses ?? 0;
     const shutouts = g.shutouts ?? 0;
+    const goals    = g.goals ?? 0;
+    const assists  = g.assists ?? 0;
     results.push({
       name: `${g.firstName?.default ?? ''} ${g.lastName?.default ?? ''}`.trim(),
       gp: g.gamesPlayed ?? 0,
-      g: 0, a: 0, ppg: 0, shg: 0, otg: 0,
-      pts: wins * 2 - losses + shutouts * 2,
+      g: goals, a: assists, ppg: 0, shg: 0, otg: 0,
+      pts: wins * 2 - losses + shutouts * 2 + goals + assists,
       wins,
       losses,
       shutouts,
