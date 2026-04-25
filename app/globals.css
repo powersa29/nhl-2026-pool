@@ -222,7 +222,7 @@ a { color: inherit; text-decoration: none; }
 
 .lb {
   display: grid;
-  grid-template-columns: 72px 1fr 90px 90px 70px 70px;
+  grid-template-columns: 72px 1fr 90px 70px 70px;
   border-radius: var(--radius); overflow: hidden; border: 1.5px solid var(--line);
 }
 .lb .th, .lb .td {
@@ -259,8 +259,8 @@ a { color: inherit; text-decoration: none; }
 .spark { width: 60px; height: 24px; }
 
 @media (max-width: 760px) {
-  .lb { grid-template-columns: 60px 1fr 70px 70px; }
-  .lb .col-gp, .lb .col-spark { display: none; }
+  .lb { grid-template-columns: 60px 1fr 70px; }
+  .lb .col-gp, .lb .col-spark, .lb .col-move { display: none; }
 }
 
 /* ── Team chips ── */

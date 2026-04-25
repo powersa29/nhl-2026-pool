@@ -50,7 +50,7 @@ export default function StandingsClient({ participants, rankSnapshot, id }: { pa
         <div className={`th ${sortKey === 'name' ? 'active' : ''}`} onClick={() => toggleSort('name')}>Participant <span className="arrow">{arrow('name')}</span></div>
         <div className={`th ${sortKey === 'total' ? 'active' : ''}`} onClick={() => toggleSort('total')}>Points <span className="arrow">{arrow('total')}</span></div>
         <div className="th col-gp">Picks</div>
-        <div className="th">Move</div>
+        <div className="th col-move">Move</div>
 
         {sorted.map(p => {
           const prevRank = rankSnapshot?.[p.id];
@@ -71,7 +71,7 @@ export default function StandingsClient({ participants, rankSnapshot, id }: { pa
                 <div className="td col-gp" style={{ fontSize: 13, color: 'var(--muted)' }}>
                   {(p.roster ?? []).length}/16
                 </div>
-                <div className="td">
+                <div className="td col-move">
                   {move === null ? (
                     <span style={{ fontSize: 13, color: 'var(--muted)' }}>—</span>
                   ) : move === 0 ? (
