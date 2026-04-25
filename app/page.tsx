@@ -5,6 +5,8 @@ import StandingsClient from '@/components/StandingsClient';
 import ScoreTicker from '@/components/ScoreTicker';
 import type { Participant } from '@/lib/db';
 
+const POOL_OPEN = process.env.NEXT_PUBLIC_POOL_OPEN === 'true';
+
 export const revalidate = 60; // revalidate every 1 min
 
 
@@ -41,7 +43,11 @@ export default async function Home() {
               <div className="stat-pill"><div className="k">{topScore}</div><div className="l">Top score</div></div>
             </div>
             <div style={{ marginTop: 22, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <a href="/signup"><button className="btn">Build my roster →</button></a>
+              {POOL_OPEN ? (
+                <a href="/signup"><button className="btn">Build my roster →</button></a>
+              ) : (
+                <button className="btn" disabled style={{ opacity: 0.4, cursor: 'not-allowed', pointerEvents: 'none' }}>Entries closed</button>
+              )}
               <a href="#standings"><button className="btn ghost">See standings</button></a>
             </div>
           </div>

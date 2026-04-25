@@ -3,9 +3,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+const POOL_OPEN = process.env.NEXT_PUBLIC_POOL_OPEN === 'true';
+
 const TABS = [
   ['/', 'Standings'],
-  ['/signup', 'Sign Up'],
   ['/rounds', 'Rounds'],
   ['/rules', 'Rules'],
 ];
@@ -65,9 +66,11 @@ export default function Header() {
             </svg>
           )}
         </button>
-        <Link href="/signup">
-          <button className="btn red">Join the pool</button>
-        </Link>
+        {POOL_OPEN ? (
+          <Link href="/signup"><button className="btn red">Join the pool</button></Link>
+        ) : (
+          <button className="btn red" disabled style={{ opacity: 0.4, cursor: 'not-allowed', pointerEvents: 'none' }}>Entries closed</button>
+        )}
       </div>
     </header>
   );
