@@ -77,7 +77,15 @@ function normalizeName(name: string): string {
 export function lookupStats(statsMap: TeamStatsMap, playerName: string): PlayerStats | null {
   const key = normalizeName(playerName);
   if (statsMap[key]) return statsMap[key];
-  const lastName = key.split(' ').pop() ?? '';
-  const match = Object.keys(statsMap).find(k => k.endsWith(lastName));
+  // Fallback: match first initial + last name to handle minor name differences
+  // (e.g. "TJ Oshie" vs "T.J. Oshie") but NOT cross-player last-name collisions
+  const parts = key.split(' ');
+  if (parts.length < 2) return null;
+  const firstInitial = parts[0][0];
+  const lastName = parts[parts.length - 1];
+  const match = Object.keys(statsMap).find(k => {
+    const kp = k.split(' ');
+    return kp.length >= 2 && kp[0][0] === firstInitial && kp[kp.length - 1] === lastName;
+  });
   return match ? statsMap[match] : null;
 }
