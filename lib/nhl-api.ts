@@ -73,7 +73,13 @@ export async function fetchAllTeamStats(abbrs: string[]): Promise<TeamStatsMap> 
 }
 
 function normalizeName(name: string): string {
-  return name.toLowerCase().replace(/[^a-z\s]/g, '').trim().replace(/\s+/g, ' ');
+  return name
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '') // strip diacritical marks (ü→u, é→e, etc.)
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, '')
+    .trim()
+    .replace(/\s+/g, ' ');
 }
 
 export function lookupStats(statsMap: TeamStatsMap, playerName: string): PlayerStats | null {
