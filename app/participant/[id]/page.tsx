@@ -39,6 +39,16 @@ export default async function ParticipantPage({ params }: { params: Promise<{ id
     byPos[pick.pos]?.push({ pick, stats });
   }
 
+  // Build ownership % across all entries
+  const totalEntries = participants.length;
+  const ownershipMap: Record<string, number> = {};
+  for (const p of participants) {
+    for (const pick of p.roster ?? []) {
+      const key = pick.playerName.toLowerCase();
+      ownershipMap[key] = (ownershipMap[key] ?? 0) + 1;
+    }
+  }
+
   const gPts = byPos.G.reduce((s, r) => s + (r.stats?.pts ?? 0), 0);
   const dPts = byPos.D.reduce((s, r) => s + (r.stats?.pts ?? 0), 0);
   const fPts = byPos.F.reduce((s, r) => s + (r.stats?.pts ?? 0), 0);
@@ -85,7 +95,9 @@ export default async function ParticipantPage({ params }: { params: Promise<{ id
               <div key={i} className="dr-card">
                 <div className="row1">
                   <TeamChip abbr={pick.team} />
-                  <span className="num">#—</span>
+                  <span style={{ fontSize: 11, color: 'var(--muted)' }}>
+                    {Math.round((ownershipMap[pick.playerName.toLowerCase()] ?? 0) / totalEntries * 100)}% owned
+                  </span>
                 </div>
                 <div className="nm">{pick.playerName}</div>
                 <div className="row2">
