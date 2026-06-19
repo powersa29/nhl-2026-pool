@@ -103,7 +103,7 @@ export default function RecordPage() {
       <div style={{ maxWidth: 500 }}>
         {celebrate && <HotdogCelebration onDone={() => setCelebrate(false)} />}
         <div className="success-banner" style={{ marginBottom: 20 }}>
-          🌭 Round recorded! Net score: <strong>{previewNet}</strong>
+          Round recorded! Net score: <strong>{previewNet}</strong>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <button className="btn" onClick={reset}>Record Another Round</button>
@@ -140,7 +140,7 @@ export default function RecordPage() {
           {roundsThisWeek !== null && (
             <div className={`hint ${roundsThisWeek >= 4 ? 'error-banner' : ''}`} style={{ marginTop: 6 }}>
               {roundsThisWeek >= 4
-                ? '⚠️ Maximum 4 rounds already recorded this week.'
+                ? 'Maximum 4 rounds already recorded this week.'
                 : `${roundsThisWeek}/4 rounds recorded this week. ${4 - roundsThisWeek} remaining.`}
             </div>
           )}
@@ -247,7 +247,7 @@ export default function RecordPage() {
           )}
         </div>
 
-        {error && <div className="error-banner">⚠️ {error}</div>}
+        {error && <div className="error-banner">{error}</div>}
 
         <div style={{ marginTop: 24 }}>
           <button

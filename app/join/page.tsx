@@ -34,7 +34,7 @@ export default function JoinPage() {
     return (
       <div style={{ maxWidth: 500 }}>
         <div className="success-banner" style={{ marginBottom: 20 }}>
-          ✅ Welcome, {done.name}! You&apos;re in the league.
+          Welcome, {done.name}! You&apos;re in the league.
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <Link href="/record"><button className="btn">Record your first round →</button></Link>
@@ -91,7 +91,7 @@ export default function JoinPage() {
           </div>
         </div>
 
-        {error && <div className="error-banner">⚠️ {error}</div>}
+        {error && <div className="error-banner">{error}</div>}
 
         <div style={{ marginTop: 24 }}>
           <button type="submit" className="btn" disabled={submitting}>

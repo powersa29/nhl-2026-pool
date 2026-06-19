@@ -30,13 +30,15 @@ interface HoleData {
   yards: number | null; handicap: number | null;
 }
 
-type CelebrationKind = 'birdie' | 'eagle' | 'ace' | 'snowman' | 'par';
+type CelebrationKind = 'birdie' | 'eagle' | 'albatross' | 'ace' | 'snowman' | 'par' | 'bogey';
 const CELEBRATIONS: Record<CelebrationKind, { emoji: string; label: string; bg: string }> = {
-  birdie:  { emoji: '🐦', label: 'Birdie!',       bg: 'rgba(21,128,61,0.92)'  },
-  eagle:   { emoji: '🦅', label: 'Eagle!!',        bg: 'rgba(29,78,216,0.92)'  },
-  ace:     { emoji: '🃏', label: 'Hole in One!!!', bg: 'rgba(109,40,217,0.94)' },
-  snowman: { emoji: '☃️', label: 'Snowman...',     bg: 'rgba(15,23,42,0.90)'   },
-  par:     { emoji: '👍', label: 'Par!',            bg: 'rgba(55,65,81,0.88)'   },
+  ace:       { emoji: '🃏', label: 'Hole in One!!!', bg: 'rgba(109,40,217,0.94)' },
+  albatross: { emoji: '🕊️', label: 'Albatross!!!',   bg: 'rgba(29,78,216,0.95)'  },
+  eagle:     { emoji: '🦅', label: 'Eagle!!',         bg: 'rgba(29,78,216,0.92)'  },
+  birdie:    { emoji: '🐦', label: 'Birdie!',         bg: 'rgba(21,128,61,0.92)'  },
+  par:       { emoji: '👍', label: 'Par!',             bg: 'rgba(55,65,81,0.88)'   },
+  bogey:     { emoji: '👌', label: 'Bogey',            bg: 'rgba(107,114,128,0.82)'},
+  snowman:   { emoji: '☃️', label: 'Snowman...',      bg: 'rgba(15,23,42,0.90)'   },
 };
 
 function CelebrationOverlay({ kind, onDone }: { kind: CelebrationKind; onDone: () => void }) {
@@ -405,11 +407,13 @@ export default function LivePage() {
       const diff = score - currentHolePar;
       setFlashLabel(scoreName(score, currentHolePar));
       setTimeout(() => setFlashLabel(''), 1400);
-      if (score === 1)      celebKind = 'ace';
-      else if (diff <= -2)  celebKind = 'eagle';
-      else if (diff === -1) celebKind = 'birdie';
-      else if (diff === 0)  celebKind = 'par';
-      else if (score === 8) celebKind = 'snowman';
+      if (score === 1)        celebKind = 'ace';
+      else if (diff <= -3)    celebKind = 'albatross';
+      else if (diff === -2)   celebKind = 'eagle';
+      else if (diff === -1)   celebKind = 'birdie';
+      else if (diff === 0)    celebKind = 'par';
+      else if (score === 8)   celebKind = 'snowman';
+      else if (diff === 1)    celebKind = 'bogey';
       if (celebKind) {
         setCelebration(celebKind);
         setTimeout(() => setCelebration(null), 2400);
@@ -766,7 +770,7 @@ export default function LivePage() {
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
             }}
           >
-            📍 {pinDist !== null ? `Move Pin · ${pinDist} yds` : 'Drop Pin on Green'}
+            {pinDist !== null ? `Move Pin · ${pinDist} yds` : 'Drop Pin on Green'}
           </button>
         </div>
 
@@ -811,7 +815,7 @@ export default function LivePage() {
         {geoError && <div className="error-banner" style={{ marginTop: 10, fontSize: 12 }}>{geoError}</div>}
         {celebration && <CelebrationOverlay kind={celebration} onDone={() => setCelebration(null)} />}
 
-        {/* Full-screen pin drop overlay */}
+        {/* Pin drop overlay */}
         {showPinMap && (
           <div style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'var(--paper)', display: 'flex', flexDirection: 'column' }}>
             <div style={{
@@ -819,7 +823,7 @@ export default function LivePage() {
               borderBottom: '1px solid var(--line)', flexShrink: 0,
             }}>
               <div>
-                <div style={{ fontWeight: 700, fontSize: 15 }}>📍 Drop Pin — Hole {currentHoleNum}</div>
+                <div style={{ fontWeight: 700, fontSize: 15 }}>Drop Pin — Hole {currentHoleNum}</div>
                 <div style={{ fontSize: 12, color: 'var(--muted)' }}>
                   {pinLatLng ? `${pinDist} yds away · tap map to move` : 'Tap the center of the green'}
                 </div>
@@ -942,7 +946,7 @@ export default function LivePage() {
                 {nine === 'front' ? 'Front 9' : 'Back 9'} · Par {totalCoursePar} · {holes.map(h => h.par).join('–')}
               </div>
             )}
-            {geoError && <div className="error-banner" style={{ marginTop: 0, fontSize: 12 }}>⚠️ {geoError}</div>}
+            {geoError && <div className="error-banner" style={{ marginTop: 0, fontSize: 12 }}>{geoError}</div>}
             <button className="btn" onClick={startRound} disabled={starting || !playerId || !courseId || !teeId}>
               {starting ? 'Starting…' : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><GolfPin size={15} color="white" />Start Round</span>}
             </button>

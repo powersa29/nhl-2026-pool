@@ -54,7 +54,7 @@ export default function GolfStandingsPage({
       <section className="hero">
         <span className="hero-tag"><span className="pulse-dot" /> Live Standings</span>
         <h1 style={{ marginTop: 14 }}>
-          Weekly<br /><span className="accent">Golf League</span> <span style={{ fontSize: '0.7em' }}>🌭</span>
+          Weekly<br /><span className="accent">Golf League</span>
         </h1>
         <p className="hero-sub">
           9-hole stroke play, handicap-adjusted net scoring. Up to 4 rounds per week —

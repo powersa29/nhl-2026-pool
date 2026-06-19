@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 const NAV = [
   { href: '/',         label: 'Standings' },
   { href: '/record',   label: 'Record Round' },
-  { href: '/live',     label: '📍 Live' },
+  { href: '/live',     label: 'On Course' },
   { href: '/courses',  label: 'Courses' },
   { href: '/join',     label: 'Join' },
   { href: '/rules',    label: 'How It Works' },
@@ -39,7 +39,7 @@ export default function GolfHeader() {
       <div className="brand">
         <div className="brand-mark">⛳</div>
         <div>
-          <div className="brand-name">Glizzy Golf League 🌭</div>
+          <div className="brand-name">Glizzy Golf League</div>
           <div className="brand-sub">Weekly 9-Hole Stroke Play</div>
         </div>
       </div>
