@@ -62,12 +62,18 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const { id, scores } = await req.json();
+  const { id, scores, pin_lat, pin_lng, pin_hole } = await req.json();
   if (!id) return NextResponse.json({ error: 'missing id' }, { status: 400 });
+
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (scores !== undefined) patch.scores = scores;
+  if (pin_lat !== undefined) patch.pin_lat = pin_lat;
+  if (pin_lng !== undefined) patch.pin_lng = pin_lng;
+  if (pin_hole !== undefined) patch.pin_hole = pin_hole;
 
   const { data, error } = await db()
     .from('live_rounds')
-    .update({ scores, updated_at: new Date().toISOString() })
+    .update(patch)
     .eq('id', id)
     .select()
     .single();

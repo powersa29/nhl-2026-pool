@@ -12,13 +12,15 @@ export interface LivePin {
 }
 
 interface Props {
-  /** If provided, map is centered here and shows a ⛳ flag */
   center?: { lat: number; lng: number; label: string };
-  /** Course ID to filter live pins (show only players on this course) */
   filterCourseId?: number;
   liveLocations?: LivePin[];
-  height?: number;
+  height?: number | string;
   zoom?: number;
+  pinDropMode?: boolean;
+  droppedPin?: { lat: number; lng: number } | null;
+  myPosition?: { lat: number; lng: number } | null;
+  onPinDrop?: (lat: number, lng: number) => void;
 }
 
 function initials(name: string) {
@@ -29,11 +31,15 @@ const COLORS = ['#15803d','#1d4ed8','#b45309','#7c3aed','#dc2626','#0891b2'];
 
 export default function GolfMap({
   center, filterCourseId, liveLocations = [], height = 340, zoom = 16,
+  pinDropMode = false, droppedPin, myPosition, onPinDrop,
 }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef       = useRef<any>(null);
-  const lRef         = useRef<any>(null);
-  const pinRefs      = useRef<any[]>([]);
+  const containerRef    = useRef<HTMLDivElement>(null);
+  const mapRef          = useRef<any>(null);
+  const lRef            = useRef<any>(null);
+  const pinRefs         = useRef<any[]>([]);
+  const droppedPinRef   = useRef<any>(null);
+  const myPositionRef   = useRef<any>(null);
+  const clickHandlerRef = useRef<any>(null);
 
   // ── Init map once ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -43,13 +49,15 @@ export default function GolfMap({
       const L = mod.default;
       lRef.current = L;
 
-      const defaultCenter: [number, number] = center
+      const initCenter: [number, number] = center
         ? [center.lat, center.lng]
-        : [38.5, -96]; // continental US fallback
+        : myPosition
+          ? [myPosition.lat, myPosition.lng]
+          : [38.5, -96];
 
       const map = L.map(containerRef.current!, {
-        center: defaultCenter,
-        zoom: center ? zoom : 4,
+        center: initCenter,
+        zoom: (center || myPosition) ? zoom : 4,
         scrollWheelZoom: false,
         zoomControl: true,
       });
@@ -60,8 +68,8 @@ export default function GolfMap({
         maxZoom: 19,
       }).addTo(map);
 
-      // Course flag
-      if (center) {
+      // Course flag — only when label is provided
+      if (center && center.label) {
         L.marker([center.lat, center.lng], {
           icon: L.divIcon({
             html: '<div style="font-size:26px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))">⛳</div>',
@@ -73,6 +81,9 @@ export default function GolfMap({
       }
 
       drawPins(L, map);
+      updateDroppedPin(L, map, droppedPin ?? null);
+      updateMyPosition(L, map, myPosition ?? null);
+      setupClickHandler(map, pinDropMode);
     });
 
     return () => {
@@ -83,12 +94,77 @@ export default function GolfMap({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Update live pins whenever locations change ──────────────────────────
+  // ── Pin drop click handler ────────────────────────────────────────────────
+  useEffect(() => {
+    if (!mapRef.current) return;
+    setupClickHandler(mapRef.current, pinDropMode);
+    if (containerRef.current) {
+      containerRef.current.style.cursor = pinDropMode ? 'crosshair' : '';
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pinDropMode, onPinDrop]);
+
+  // ── Dropped pin marker ────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!mapRef.current || !lRef.current) return;
+    updateDroppedPin(lRef.current, mapRef.current, droppedPin ?? null);
+  }, [droppedPin]);
+
+  // ── My position marker ────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!mapRef.current || !lRef.current) return;
+    updateMyPosition(lRef.current, mapRef.current, myPosition ?? null);
+  }, [myPosition]);
+
+  // ── Live player pins ──────────────────────────────────────────────────────
   useEffect(() => {
     if (!mapRef.current || !lRef.current) return;
     drawPins(lRef.current, mapRef.current);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveLocations, filterCourseId]);
+
+  function setupClickHandler(map: any, active: boolean) {
+    if (clickHandlerRef.current) {
+      map.off('click', clickHandlerRef.current);
+      clickHandlerRef.current = null;
+    }
+    if (active && onPinDrop) {
+      clickHandlerRef.current = (e: any) => onPinDrop(e.latlng.lat, e.latlng.lng);
+      map.on('click', clickHandlerRef.current);
+    }
+  }
+
+  function updateDroppedPin(L: any, map: any, pin: { lat: number; lng: number } | null) {
+    if (droppedPinRef.current) { droppedPinRef.current.remove(); droppedPinRef.current = null; }
+    if (!pin) return;
+    droppedPinRef.current = L.marker([pin.lat, pin.lng], {
+      icon: L.divIcon({
+        html: '<div style="font-size:30px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));line-height:1">📍</div>',
+        className: '',
+        iconSize: [30, 34],
+        iconAnchor: [8, 32],
+      }),
+      zIndexOffset: 2000,
+    }).addTo(map);
+  }
+
+  function updateMyPosition(L: any, map: any, pos: { lat: number; lng: number } | null) {
+    if (myPositionRef.current) { myPositionRef.current.remove(); myPositionRef.current = null; }
+    if (!pos) return;
+    myPositionRef.current = L.marker([pos.lat, pos.lng], {
+      icon: L.divIcon({
+        html: `<div style="
+          width:16px;height:16px;border-radius:50%;
+          background:#3b82f6;border:3px solid white;
+          box-shadow:0 0 0 5px rgba(59,130,246,0.25),0 2px 8px rgba(0,0,0,.4);
+        "></div>`,
+        className: '',
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
+      }),
+      zIndexOffset: 3000,
+    }).addTo(map).bindPopup('<strong>You</strong>');
+  }
 
   function drawPins(L: any, map: any) {
     pinRefs.current.forEach(m => m.remove());
@@ -117,12 +193,11 @@ export default function GolfMap({
           iconAnchor: [17, 17],
         }),
         zIndexOffset: 1000,
-      }).addTo(map).bindPopup(`<strong>${p.player_name}</strong>${p.course_id ? '' : ''}`);
+      }).addTo(map).bindPopup(`<strong>${p.player_name}</strong>`);
       pinRefs.current.push(marker);
       bounds.push([p.lat, p.lng]);
     });
 
-    // If no fixed center and we have pins, fit to them
     if (!center && bounds.length) {
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
     }

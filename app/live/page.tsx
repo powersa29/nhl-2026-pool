@@ -23,6 +23,7 @@ interface LiveRound {
   course_name: string; tee_name: string;
   scores: number[]; hole_pars: { par: number }[];
   slope_rating: number; handicap_index: number | null;
+  pin_lat?: number | null; pin_lng?: number | null; pin_hole?: number | null;
 }
 interface HoleData {
   hole_number: number; par: number;
@@ -95,6 +96,15 @@ function timeAgo(ts: string) {
   return `${Math.floor(s / 3600)}h ago`;
 }
 
+function haversineYards(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 1.09361);
+}
+
 function getScoreBtns(par: number | null) {
   const max = par ? Math.min(12, par + 6) : 10;
   return Array.from({ length: max }, (_, i) => {
@@ -159,6 +169,9 @@ export default function LivePage() {
   const [submitting, setSubmitting] = useState(false);
   const [flashLabel, setFlashLabel] = useState('');
   const [celebration, setCelebration] = useState<CelebrationKind | null>(null);
+  const [myLatLng, setMyLatLng]   = useState<{ lat: number; lng: number } | null>(null);
+  const [pinLatLng, setPinLatLng] = useState<{ lat: number; lng: number } | null>(null);
+  const [showPinMap, setShowPinMap] = useState(false);
 
   const watchIdRef  = useRef<number | null>(null);
   const sendTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -258,6 +271,28 @@ export default function LivePage() {
     setLiveRounds(Array.isArray(rounds) ? rounds : []);
   }
 
+  // Pick up a pin dropped by someone else in the group
+  useEffect(() => {
+    if (step !== 'playing' || pinLatLng) return;
+    const pinRow = liveRounds.find(r => r.pin_lat && r.pin_lng && r.pin_hole === currentHoleNum);
+    if (pinRow?.pin_lat && pinRow?.pin_lng) {
+      setPinLatLng({ lat: pinRow.pin_lat, lng: pinRow.pin_lng });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveRounds, currentHoleNum, step]);
+
+  async function dropPin(lat: number, lng: number) {
+    setPinLatLng({ lat, lng });
+    setShowPinMap(false);
+    if (liveRoundRef.current) {
+      fetch('/api/live-scoring', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: liveRoundRef.current, pin_lat: lat, pin_lng: lng, pin_hole: currentHoleNum }),
+      }).catch(() => {});
+    }
+  }
+
   function pushLocation(lat: number, lng: number) {
     const p = playersRef.current.find(p => p.id === Number(playerIdRef.current));
     const c = coursesRef.current.find(c => c.id === Number(courseIdRef.current));
@@ -292,6 +327,9 @@ export default function LivePage() {
   const totalCoursePar = holes.reduce((a, h) => a + h.par, 0);
   const vsParNow       = scores.length > 0 && parThrough > 0 ? gross - parThrough : null;
   const scoreBtns      = getScoreBtns(currentHolePar);
+  const pinDist        = pinLatLng && myLatLng
+    ? haversineYards(myLatLng.lat, myLatLng.lng, pinLatLng.lat, pinLatLng.lng)
+    : null;
 
   const pins: LivePin[] = liveList.map(l => ({
     player_id: l.player_id, player_name: l.player_name,
@@ -340,8 +378,12 @@ export default function LivePage() {
           await pushLocation(lat, lng);
           setSharing(true);
           watchIdRef.current = navigator.geolocation.watchPosition(
-            px => { lastPos.current = { lat: px.coords.latitude, lng: px.coords.longitude }; },
-            () => {}, { enableHighAccuracy: true, maximumAge: 5000 },
+            px => {
+              const pos = { lat: px.coords.latitude, lng: px.coords.longitude };
+              lastPos.current = pos;
+              setMyLatLng(pos);
+            },
+            () => {}, { enableHighAccuracy: true, maximumAge: 3000 },
           );
           sendTimerRef.current = setInterval(() => {
             if (lastPos.current) pushLocation(lastPos.current.lat, lastPos.current.lng);
@@ -384,7 +426,10 @@ export default function LivePage() {
     if (currentHole >= 8) {
       if (celebKind) setTimeout(() => setStep('done'), 2200);
       else setStep('done');
-    } else { setCurrentHole(h => h + 1); }
+    } else {
+      setCurrentHole(h => h + 1);
+      setPinLatLng(null); // clear pin when advancing to next hole
+    }
   }
 
   function undoLast() {
@@ -671,6 +716,21 @@ export default function LivePage() {
             )}
           </div>
 
+          {/* Distance to pin */}
+          {pinDist !== null && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              background: 'var(--green)', color: 'white',
+              borderRadius: 'var(--radius)', padding: '10px 16px', marginBottom: 10,
+            }}>
+              <span style={{ fontSize: 32, fontWeight: 900, lineHeight: 1 }}>{pinDist}</span>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 0.5 }}>YDS</div>
+                <div style={{ fontSize: 11, opacity: 0.8 }}>to pin</div>
+              </div>
+            </div>
+          )}
+
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {scoreBtns.map(btn => (
                 <button
@@ -695,6 +755,19 @@ export default function LivePage() {
                 </button>
               ))}
             </div>
+
+          {/* Drop pin button */}
+          <button
+            onClick={() => setShowPinMap(true)}
+            style={{
+              width: '100%', marginTop: 10, padding: '9px', borderRadius: 'var(--radius)',
+              border: '1.5px solid var(--line)', background: 'var(--chip)',
+              color: 'var(--ink-soft)', fontWeight: 600, fontSize: 13, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            }}
+          >
+            📍 {pinDist !== null ? `Move Pin · ${pinDist} yds` : 'Drop Pin on Green'}
+          </button>
         </div>
 
         <div style={{ marginBottom: 14 }}>
@@ -737,6 +810,46 @@ export default function LivePage() {
         )}
         {geoError && <div className="error-banner" style={{ marginTop: 10, fontSize: 12 }}>{geoError}</div>}
         {celebration && <CelebrationOverlay kind={celebration} onDone={() => setCelebration(null)} />}
+
+        {/* Full-screen pin drop overlay */}
+        {showPinMap && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'var(--paper)', display: 'flex', flexDirection: 'column' }}>
+            <div style={{
+              padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              borderBottom: '1px solid var(--line)', flexShrink: 0,
+            }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 15 }}>📍 Drop Pin — Hole {currentHoleNum}</div>
+                <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                  {pinLatLng ? `${pinDist} yds away · tap map to move` : 'Tap the center of the green'}
+                </div>
+              </div>
+              <button onClick={() => setShowPinMap(false)}
+                style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: 'var(--muted)', padding: '4px 8px', lineHeight: 1 }}>
+                ×
+              </button>
+            </div>
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <GolfMap
+                liveLocations={pins}
+                myPosition={myLatLng}
+                droppedPin={pinLatLng}
+                pinDropMode
+                onPinDrop={dropPin}
+                height={typeof window !== 'undefined' ? window.innerHeight - 130 : 500}
+                zoom={18}
+                center={myLatLng ? { lat: myLatLng.lat, lng: myLatLng.lng, label: '' } : undefined}
+              />
+            </div>
+            {pinLatLng && (
+              <div style={{ padding: '12px 16px', borderTop: '1px solid var(--line)', flexShrink: 0 }}>
+                <button className="btn" style={{ width: '100%' }} onClick={() => setShowPinMap(false)}>
+                  ✓ Pin Set{pinDist !== null ? ` · ${pinDist} yds away` : ''}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   }
