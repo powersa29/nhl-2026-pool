@@ -319,6 +319,8 @@ export default function LivePage() {
   const totalCoursePar = holes.reduce((a, h) => a + h.par, 0);
   const vsParNow       = scores.length > 0 && parThrough > 0 ? gross - parThrough : null;
   const scoreBtns      = getScoreBtns(currentHolePar);
+  const hasYards       = holes.some(h => h.yards);
+  const totalYards     = hasYards ? holes.reduce((a, h) => a + (h.yards ?? 0), 0) : 0;
   const pinDist        = pinLatLng && myLatLng
     ? haversineYards(myLatLng.lat, myLatLng.lng, pinLatLng.lat, pinLatLng.lng)
     : null;
@@ -488,7 +490,6 @@ export default function LivePage() {
   };
 
   function ScorecardTable({ forDone = false }: { forDone?: boolean }) {
-    const hasYards = holes.some(h => h.yards);
     const hasHdcp  = holes.some(h => h.handicap);
     return (
       <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' as unknown as undefined }}>
@@ -535,7 +536,7 @@ export default function LivePage() {
                   <td key={h} style={{ ...cellSt, color: 'var(--muted)', fontSize: 10 }}>{holeMap.get(h)?.yards ?? ''}</td>
                 ))}
                 <td style={{ ...cellSt, color: 'var(--muted)', fontSize: 10, borderLeft: '2px solid var(--line)' }}>
-                  {holes.reduce((a, h) => a + (h.yards ?? 0), 0) || ''}
+                  {totalYards || ''}
                 </td>
               </tr>
             )}
@@ -943,7 +944,10 @@ export default function LivePage() {
 
             {teeId && holes.length > 0 && (
               <div style={{ fontSize: 12, color: 'var(--muted)', background: 'var(--ice-2)', borderRadius: 'var(--radius)', padding: '8px 10px' }}>
-                {nine === 'front' ? 'Front 9' : 'Back 9'} · Par {totalCoursePar} · {holes.map(h => h.par).join('–')}
+                {nine === 'front' ? 'Front 9' : 'Back 9'} · Par {totalCoursePar}{totalYards > 0 ? ` · ${totalYards} yds` : ''} · {holes.map(h => h.par).join('–')}
+                {hasYards && (
+                  <><br /><span style={{ fontFamily: 'var(--mono)' }}>Yds: {holes.map(h => h.yards ?? '—').join('–')}</span></>
+                )}
               </div>
             )}
             {geoError && <div className="error-banner" style={{ marginTop: 0, fontSize: 12 }}>{geoError}</div>}
