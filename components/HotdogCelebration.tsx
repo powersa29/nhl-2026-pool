@@ -12,7 +12,7 @@ interface Dog {
   emoji: string;
 }
 
-const EMOJIS = ['⛳', '⛳', '⛳', '🏆', '🏆', '🎉', '🎊', '🏌️'];
+const EMOJIS = ['🌭', '🌭', '🌭', '🌭', '🌭', '🌭', '⛳', '🏆'];
 
 export default function HotdogCelebration({ onDone }: { onDone: () => void }) {
   const dogs = useMemo<Dog[]>(() =>
