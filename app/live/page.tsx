@@ -161,6 +161,7 @@ export default function LivePage() {
   const [flashLabel, setFlashLabel] = useState('');
   const [celebration, setCelebration] = useState<CelebrationKind | null>(null);
   const [fetchingHoles, setFetchingHoles] = useState(false);
+  const [scorecardMsg, setScorecardMsg] = useState('');
 
   const watchIdRef  = useRef<number | null>(null);
   const sendTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -315,13 +316,25 @@ export default function LivePage() {
     const t = c?.tees.find(tx => tx.id === Number(teeId));
     if (!c || !t) return;
     setFetchingHoles(true);
+    setScorecardMsg('');
     const params = new URLSearchParams({
       teeId, courseName: c.name, teeName: t.tee_name, slope: String(t.slope_rating),
     });
     try {
-      const data = await fetch(`/api/courses/auto-holes?${params}`).then(r => r.ok ? r.json() : []);
-      if (Array.isArray(data) && data.length > 0) setAllHoles(data);
-    } catch {}
+      const data = await fetch(`/api/courses/auto-holes?${params}`).then(r => r.json());
+      if (Array.isArray(data) && data.length > 0) {
+        setAllHoles(data);
+        setScorecardMsg(`Loaded ${data.length} holes.`);
+      } else {
+        const reason = data?.error;
+        if (reason === 'not_found') setScorecardMsg('Course not found in scorecard database — par values won\'t be auto-filled.');
+        else if (reason === 'no_holes') setScorecardMsg('Course found but no hole data available.');
+        else if (reason === 'no_key') setScorecardMsg('Scorecard lookup not configured.');
+        else setScorecardMsg('Couldn\'t load scorecard — you can still score without it.');
+      }
+    } catch {
+      setScorecardMsg('Network error — try again.');
+    }
     setFetchingHoles(false);
   }
 
@@ -883,15 +896,22 @@ export default function LivePage() {
               </div>
             )}
             {teeId && (
-              <button
-                type="button"
-                className="btn ghost"
-                style={{ fontSize: 13 }}
-                onClick={pullScorecard}
-                disabled={fetchingHoles}
-              >
-                {fetchingHoles ? 'Loading scorecard…' : holes.length > 0 ? 'Refresh Scorecard' : 'Pull in Scorecard'}
-              </button>
+              <>
+                <button
+                  type="button"
+                  className="btn ghost"
+                  style={{ fontSize: 13 }}
+                  onClick={pullScorecard}
+                  disabled={fetchingHoles}
+                >
+                  {fetchingHoles ? 'Loading scorecard…' : holes.length > 0 ? 'Refresh Scorecard' : 'Pull in Scorecard'}
+                </button>
+                {scorecardMsg && (
+                  <div style={{ fontSize: 12, color: scorecardMsg.startsWith('Loaded') ? 'var(--green)' : 'var(--muted)', marginTop: -4 }}>
+                    {scorecardMsg}
+                  </div>
+                )}
+              </>
             )}
             {geoError && <div className="error-banner" style={{ marginTop: 0, fontSize: 12 }}>⚠️ {geoError}</div>}
             <button className="btn" onClick={startRound} disabled={starting || !playerId || !courseId || !teeId}>

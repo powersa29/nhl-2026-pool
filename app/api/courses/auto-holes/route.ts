@@ -42,8 +42,11 @@ export async function GET(req: NextRequest) {
   const teeName    = req.nextUrl.searchParams.get('teeName') ?? '';
   const slope      = Number(req.nextUrl.searchParams.get('slope') ?? 0);
 
-  if (!teeId || !courseName || !process.env.GOLF_COURSE_API_KEY) {
-    return NextResponse.json([]);
+  if (!teeId || !courseName) {
+    return NextResponse.json({ error: 'missing_params' });
+  }
+  if (!process.env.GOLF_COURSE_API_KEY) {
+    return NextResponse.json({ error: 'no_key' });
   }
 
   try {
@@ -51,19 +54,19 @@ export async function GET(req: NextRequest) {
       `${GOLF_BASE}/search?search_query=${encodeURIComponent(courseName)}`,
       { headers: golfHeaders() },
     );
-    if (!searchRes.ok) return NextResponse.json([]);
+    if (!searchRes.ok) return NextResponse.json({ error: 'api_error' });
     const searchData = await searchRes.json();
     const courses    = (searchData.courses ?? []) as { id: number | string }[];
-    if (!courses.length) return NextResponse.json([]);
+    if (!courses.length) return NextResponse.json({ error: 'not_found' });
 
     const detailRes = await fetch(
       `${GOLF_BASE}/courses/${courses[0].id}`,
       { headers: golfHeaders() },
     );
-    if (!detailRes.ok) return NextResponse.json([]);
+    if (!detailRes.ok) return NextResponse.json({ error: 'api_error' });
     const detailData = await detailRes.json();
     const apiTees    = extractTees(detailData as Record<string, unknown>);
-    if (!apiTees.length) return NextResponse.json([]);
+    if (!apiTees.length) return NextResponse.json({ error: 'no_holes' });
 
     const byName = apiTees.find(t =>
       (t.tee_name ?? t.name ?? '').toLowerCase() === teeName.toLowerCase()
@@ -74,7 +77,7 @@ export async function GET(req: NextRequest) {
         Math.abs((a.slope_rating ?? 0) - slope) - Math.abs((b.slope_rating ?? 0) - slope)
       )[0];
     const best = byName ?? bySlope;
-    if (!best?.holes?.length) return NextResponse.json([]);
+    if (!best?.holes?.length) return NextResponse.json({ error: 'no_holes' });
 
     const holes = best.holes.map((h, i) => ({
       tee_id:      Number(teeId),
@@ -88,6 +91,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(holes.map(({ tee_id: _t, ...h }) => h));
   } catch {
-    return NextResponse.json([]);
+    return NextResponse.json({ error: 'api_error' });
   }
 }
