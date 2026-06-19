@@ -36,6 +36,25 @@ function extractTees(data: Record<string, unknown>): ApiTee[] {
   return [];
 }
 
+// Strip generic suffixes so "Chestnut Hill Country Club" → "Chestnut Hill"
+function stripSuffixes(name: string): string {
+  const stripped = name
+    .replace(/\b(golf\s+(&\s+)?country\s+club|country\s+club|golf\s+course|golf\s+club|golf\s+links|golf\s+resort|links|resort)\b/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  return stripped || name;
+}
+
+async function searchCourse(term: string): Promise<{ id: number | string }[]> {
+  const res = await fetch(
+    `${GOLF_BASE}/search?search_query=${encodeURIComponent(term)}`,
+    { headers: golfHeaders() },
+  );
+  if (!res.ok) return [];
+  const data = await res.json();
+  return (data.courses ?? []) as { id: number | string }[];
+}
+
 export async function GET(req: NextRequest) {
   const teeId      = req.nextUrl.searchParams.get('teeId');
   const courseName = req.nextUrl.searchParams.get('courseName') ?? '';
@@ -50,13 +69,12 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const searchRes = await fetch(
-      `${GOLF_BASE}/search?search_query=${encodeURIComponent(courseName)}`,
-      { headers: golfHeaders() },
-    );
-    if (!searchRes.ok) return NextResponse.json({ error: 'api_error' });
-    const searchData = await searchRes.json();
-    const courses    = (searchData.courses ?? []) as { id: number | string }[];
+    const searchTerm = stripSuffixes(courseName);
+    // Try stripped name first; fall back to full name if no results
+    let courses = await searchCourse(searchTerm);
+    if (!courses.length && searchTerm !== courseName) {
+      courses = await searchCourse(courseName);
+    }
     if (!courses.length) return NextResponse.json({ error: 'not_found' });
 
     const detailRes = await fetch(
