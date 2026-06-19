@@ -271,16 +271,6 @@ export default function LivePage() {
     setLiveRounds(Array.isArray(rounds) ? rounds : []);
   }
 
-  // Pick up a pin dropped by someone else in the group
-  useEffect(() => {
-    if (step !== 'playing' || pinLatLng) return;
-    const pinRow = liveRounds.find(r => r.pin_lat && r.pin_lng && r.pin_hole === currentHoleNum);
-    if (pinRow?.pin_lat && pinRow?.pin_lng) {
-      setPinLatLng({ lat: pinRow.pin_lat, lng: pinRow.pin_lng });
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [liveRounds, currentHoleNum, step]);
-
   async function dropPin(lat: number, lng: number) {
     setPinLatLng({ lat, lng });
     setShowPinMap(false);
@@ -335,6 +325,16 @@ export default function LivePage() {
     player_id: l.player_id, player_name: l.player_name,
     lat: l.lat, lng: l.lng, course_id: l.course_id,
   }));
+
+  // Pick up a pin dropped by someone else in the group
+  useEffect(() => {
+    if (step !== 'playing' || pinLatLng) return;
+    const pinRow = liveRounds.find(r => r.pin_lat && r.pin_lng && r.pin_hole === currentHoleNum);
+    if (pinRow?.pin_lat && pinRow?.pin_lng) {
+      setPinLatLng({ lat: pinRow.pin_lat, lng: pinRow.pin_lng });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveRounds, currentHoleNum, step]);
 
   async function startRound() {
     if (!playerId || !courseId || !teeId) return;
