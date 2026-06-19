@@ -24,8 +24,6 @@ interface Props {
 
 const DEFAULT_TEES: TeeInput[] = [
   { tee_name: 'White', slope_rating: '', course_rating: '', yards_9: '' },
-  { tee_name: 'Blue',  slope_rating: '', course_rating: '', yards_9: '' },
-  { tee_name: 'Black', slope_rating: '', course_rating: '', yards_9: '' },
 ];
 
 export default function AddCourseModal({ onClose, onAdded, existingCourses = [] }: Props) {
