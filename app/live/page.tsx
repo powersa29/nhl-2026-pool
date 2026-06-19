@@ -777,7 +777,7 @@ export default function LivePage() {
           {!mapCollapsed && (
             <>
               <div style={{ border: '2px solid var(--green-dark)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', marginBottom: 8 }}>
-                <GolfMap liveLocations={pins} height={200} />
+                <GolfMap liveLocations={pins} height={200} droppedPin={pinLatLng} myPosition={myLatLng} />
               </div>
               {liveList.filter(l => l.player_id !== Number(playerId)).map((l, i) => (
                 <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'var(--ice-2)', border: '1.5px solid var(--line)', borderRadius: 'var(--radius)', marginBottom: 6 }}>
