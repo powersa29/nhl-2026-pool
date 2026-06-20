@@ -45,14 +45,27 @@ function stripSuffixes(name: string): string {
   return stripped || name;
 }
 
-async function searchCourse(term: string): Promise<{ id: number | string }[]> {
+interface ApiCourse { id: number | string; club_name?: string; location?: { city?: string; state?: string; state_code?: string } | string; city?: string; state?: string; state_code?: string; }
+
+async function searchCourse(term: string): Promise<ApiCourse[]> {
   const res = await fetch(
     `${GOLF_BASE}/search?search_query=${encodeURIComponent(term)}`,
     { headers: golfHeaders() },
   );
   if (!res.ok) return [];
   const data = await res.json();
-  return (data.courses ?? []) as { id: number | string }[];
+  return (data.courses ?? []) as ApiCourse[];
+}
+
+function courseMatchesLocation(c: ApiCourse, state: string, city: string): boolean {
+  const loc = typeof c.location === 'object' && c.location !== null ? c.location : {};
+  const cs = (c.state ?? (loc as Record<string,string>).state ?? (loc as Record<string,string>).state_code ?? '').toLowerCase();
+  const cc = (c.city  ?? (loc as Record<string,string>).city  ?? '').toLowerCase();
+  const s  = state.toLowerCase();
+  const ci = city.toLowerCase();
+  const stateMatch = !s || cs.includes(s) || s.includes(cs);
+  const cityMatch  = !ci || cc.includes(ci) || ci.includes(cc);
+  return stateMatch && cityMatch;
 }
 
 export async function GET(req: NextRequest) {
@@ -61,6 +74,7 @@ export async function GET(req: NextRequest) {
   const teeName    = req.nextUrl.searchParams.get('teeName') ?? '';
   const slope      = Number(req.nextUrl.searchParams.get('slope') ?? 0);
   const state      = req.nextUrl.searchParams.get('state') ?? '';
+  const city       = req.nextUrl.searchParams.get('city') ?? '';
 
   if (!teeId || !courseName) {
     return NextResponse.json({ error: 'missing_params' });
@@ -71,18 +85,24 @@ export async function GET(req: NextRequest) {
 
   try {
     const strippedName = stripSuffixes(courseName);
-    // Try most-specific to least: stripped+state, stripped, full+state, full
+    // Try most-specific to least: name+city+state, name+state, name+city, bare name, full name variants
     const candidates = [
-      state ? `${strippedName} ${state}` : null,
+      city && state ? `${strippedName} ${city} ${state}` : null,
+      state         ? `${strippedName} ${state}` : null,
+      city          ? `${strippedName} ${city}` : null,
       strippedName,
-      state && strippedName !== courseName ? `${courseName} ${state}` : null,
+      city && state && strippedName !== courseName ? `${courseName} ${city} ${state}` : null,
       strippedName !== courseName ? courseName : null,
     ].filter(Boolean) as string[];
 
-    let courses: { id: number | string }[] = [];
+    let courses: ApiCourse[] = [];
     for (const term of candidates) {
-      courses = await searchCourse(term);
-      if (courses.length) break;
+      const results = await searchCourse(term);
+      if (!results.length) continue;
+      // Prefer results that match our state/city
+      const located = results.filter(c => courseMatchesLocation(c, state, city));
+      courses = located.length ? located : results;
+      break;
     }
     if (!courses.length) return NextResponse.json({ error: 'not_found' });
 
