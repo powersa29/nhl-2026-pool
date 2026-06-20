@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import type { Course, Tee } from '@/lib/golf-db';
 import AddCourseModal from '@/components/AddCourseModal';
+import CourseHoleEditor from '@/components/CourseHoleEditor';
 
 const GolfMap = dynamic(() => import('@/components/GolfMap'), { ssr: false });
 
@@ -164,6 +165,13 @@ export default function CoursesPage() {
                     <div style={{ marginTop: 12, fontSize: 11, color: 'var(--muted)' }}>
                       Ratings are for 9-hole play. Course handicap = round(HI × Slope ÷ 113 ÷ 2).
                     </div>
+
+                    <CourseHoleEditor
+                      tees={course.tees}
+                      courseName={course.name}
+                      courseCity={course.city}
+                      courseState={course.state}
+                    />
 
                     {/* Course map */}
                     {coordsMap[course.id] ? (
