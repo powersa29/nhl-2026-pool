@@ -60,6 +60,7 @@ export async function GET(req: NextRequest) {
   const courseName = req.nextUrl.searchParams.get('courseName') ?? '';
   const teeName    = req.nextUrl.searchParams.get('teeName') ?? '';
   const slope      = Number(req.nextUrl.searchParams.get('slope') ?? 0);
+  const state      = req.nextUrl.searchParams.get('state') ?? '';
 
   if (!teeId || !courseName) {
     return NextResponse.json({ error: 'missing_params' });
@@ -69,11 +70,19 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const searchTerm = stripSuffixes(courseName);
-    // Try stripped name first; fall back to full name if no results
-    let courses = await searchCourse(searchTerm);
-    if (!courses.length && searchTerm !== courseName) {
-      courses = await searchCourse(courseName);
+    const strippedName = stripSuffixes(courseName);
+    // Try most-specific to least: stripped+state, stripped, full+state, full
+    const candidates = [
+      state ? `${strippedName} ${state}` : null,
+      strippedName,
+      state && strippedName !== courseName ? `${courseName} ${state}` : null,
+      strippedName !== courseName ? courseName : null,
+    ].filter(Boolean) as string[];
+
+    let courses: { id: number | string }[] = [];
+    for (const term of candidates) {
+      courses = await searchCourse(term);
+      if (courses.length) break;
     }
     if (!courses.length) return NextResponse.json({ error: 'not_found' });
 

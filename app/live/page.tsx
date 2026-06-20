@@ -199,7 +199,7 @@ export default function LivePage() {
     const t = c?.tees.find(tx => tx.id === Number(teeId));
     if (!c || !t) return;
     const params = new URLSearchParams({
-      teeId, courseName: c.name, teeName: t.tee_name, slope: String(t.slope_rating),
+      teeId, courseName: c.name, teeName: t.tee_name, slope: String(t.slope_rating), state: c.state,
     });
     fetch(`/api/courses/auto-holes?${params}`)
       .then(r => r.ok ? r.json() : [])
@@ -318,7 +318,7 @@ export default function LivePage() {
     setFetchingHoles(true);
     setScorecardMsg('');
     const params = new URLSearchParams({
-      teeId, courseName: c.name, teeName: t.tee_name, slope: String(t.slope_rating),
+      teeId, courseName: c.name, teeName: t.tee_name, slope: String(t.slope_rating), state: c.state,
     });
     try {
       const data = await fetch(`/api/courses/auto-holes?${params}`).then(r => r.json());
