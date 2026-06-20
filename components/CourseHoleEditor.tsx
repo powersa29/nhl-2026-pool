@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Tee } from '@/lib/golf-db';
 import { Download, Search } from './icons';
 
@@ -88,7 +88,7 @@ function fillHoles(existing: HoleRow[], startHole: number): HoleRow[] {
   });
 }
 
-type FetchStep = 'idle' | 'searching' | 'manual' | 'selecting' | 'previewing' | 'importing' | 'done' | 'error';
+type FetchStep = 'idle' | 'searching' | 'manual' | 'selecting' | 'previewing' | 'importing' | 'done' | 'error' | 'scanning' | 'scan-preview';
 
 export default function CourseHoleEditor({
   tees, courseName = '', courseCity = '', courseState = '',
@@ -114,6 +114,8 @@ export default function CourseHoleEditor({
   const [matchCount, setMatchCount]       = useState(0);
   const [rawData, setRawData]             = useState<Record<string, unknown> | null>(null);
   const [manualQuery, setManualQuery]     = useState('');
+  const [scanPreviewRows, setScanPreviewRows] = useState<HoleRow[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!selectedTeeId || loaded.has(selectedTeeId)) return;
@@ -248,6 +250,41 @@ export default function CourseHoleEditor({
     setLoaded(prev => new Set(prev).add(localTeeId));
   }
 
+  async function scanScorecard(file: File) {
+    setFetchStep('scanning');
+    setFetchError('');
+    const form = new FormData();
+    form.append('image', file);
+    try {
+      const res = await fetch('/api/courses/scan-scorecard', { method: 'POST', body: form });
+      const data = await res.json();
+      if (!res.ok || !Array.isArray(data.holes) || data.holes.length === 0) {
+        setFetchError(data.error === 'no_key' ? 'AI scanning not configured.' : 'Couldn\'t read the scorecard — try a clearer photo or enter manually.');
+        setFetchStep('error');
+        return;
+      }
+      setScanPreviewRows(data.holes);
+      setFetchStep('scan-preview');
+    } catch {
+      setFetchError('Network error — try again.');
+      setFetchStep('error');
+    }
+  }
+
+  async function confirmScan() {
+    if (!selectedTeeId) return;
+    setFetchStep('importing');
+    await fetch('/api/holes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ teeId: selectedTeeId, holes: scanPreviewRows }),
+    });
+    setHoleData(prev => ({ ...prev, [key]: scanPreviewRows }));
+    setLoaded(prev => new Set(prev).add(selectedTeeId));
+    setFetchStep('done');
+    setTimeout(() => setFetchStep('idle'), 2500);
+  }
+
   function cancelFetch() {
     setFetchStep('idle');
     setSearchResults([]);
@@ -270,11 +307,23 @@ export default function CourseHoleEditor({
 
       {/* ── Auto-fill banner ────────────────────────────────────────────── */}
       {fetchStep === 'idle' && (
-        <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'flex-end' }}>
+        <div style={{ marginBottom: 10, display: 'flex', gap: 6, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
           <button onClick={() => startFetch()}
             style={{ fontSize: 11, padding: '3px 10px', borderRadius: 4, border: '1.5px solid var(--line)', background: 'var(--chip)', cursor: 'pointer', color: 'var(--ink)' }}>
             <Download size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} /> Pull in scorecard
           </button>
+          <button onClick={() => fileInputRef.current?.click()}
+            style={{ fontSize: 11, padding: '3px 10px', borderRadius: 4, border: '1.5px solid var(--line)', background: 'var(--chip)', cursor: 'pointer', color: 'var(--ink)' }}>
+            📷 Scan scorecard photo
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            style={{ display: 'none' }}
+            onChange={e => { const f = e.target.files?.[0]; if (f) scanScorecard(f); e.target.value = ''; }}
+          />
         </div>
       )}
 
@@ -370,6 +419,53 @@ export default function CourseHoleEditor({
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {fetchStep === 'scanning' && (
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10 }}>
+          📷 Reading scorecard with AI…
+        </div>
+      )}
+
+      {fetchStep === 'scan-preview' && (
+        <div style={{ marginBottom: 10, background: 'var(--ice-2)', border: '1.5px solid var(--line)', borderRadius: 'var(--radius)', padding: '10px 12px' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>
+            ✅ Read {scanPreviewRows.length} holes — review and confirm:
+          </div>
+          <div style={{ overflowX: 'auto', marginBottom: 10 }}>
+            <table style={{ borderCollapse: 'collapse', fontSize: 11, width: '100%' }}>
+              <thead>
+                <tr style={{ color: 'var(--muted)' }}>
+                  <th style={{ padding: '2px 6px', textAlign: 'left' }}>Hole</th>
+                  {scanPreviewRows.map(h => <th key={h.hole_number} style={{ padding: '2px 4px', textAlign: 'center', minWidth: 24 }}>{h.hole_number}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style={{ padding: '2px 6px', fontWeight: 600 }}>Par</td>
+                  {scanPreviewRows.map(h => <td key={h.hole_number} style={{ padding: '2px 4px', textAlign: 'center', fontWeight: 700 }}>{h.par}</td>)}
+                </tr>
+                {scanPreviewRows.some(h => h.yards) && (
+                  <tr>
+                    <td style={{ padding: '2px 6px', fontWeight: 600, color: 'var(--muted)' }}>Yds</td>
+                    {scanPreviewRows.map(h => <td key={h.hole_number} style={{ padding: '2px 4px', textAlign: 'center', color: 'var(--muted)' }}>{h.yards ?? '—'}</td>)}
+                  </tr>
+                )}
+                {scanPreviewRows.some(h => h.handicap) && (
+                  <tr>
+                    <td style={{ padding: '2px 6px', fontWeight: 600, color: 'var(--muted)' }}>HCP</td>
+                    {scanPreviewRows.map(h => <td key={h.hole_number} style={{ padding: '2px 4px', textAlign: 'center', color: 'var(--muted)' }}>{h.handicap ?? '—'}</td>)}
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={confirmScan} className="btn" style={{ fontSize: 12, padding: '5px 12px' }}>✓ Save These Holes</button>
+            <button onClick={() => fileInputRef.current?.click()} className="btn ghost" style={{ fontSize: 12, padding: '5px 12px' }}>📷 Retake</button>
+            <button onClick={cancelFetch} className="btn ghost" style={{ fontSize: 12, padding: '5px 10px' }}>✕</button>
+          </div>
         </div>
       )}
 
