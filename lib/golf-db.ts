@@ -68,15 +68,13 @@ export interface StandingRow {
 
 export interface SeasonStandingRow {
   player: Player;
-  points: number;
+  weeksWon: number;
   weeksPlayed: number;
   totalRounds: number;
   rank: number;
 }
 
-const WEEK_POINTS = [10, 7, 5, 4, 3, 2, 1];
-
-// ── Players ──────────────────────────────────────────────────────────────────
+// ── Players ──────────────────────────────────────────────────────────────────────────────
 
 export async function getPlayers(): Promise<Player[]> {
   const { data, error } = await db()
@@ -115,7 +113,7 @@ export async function getPlayer(id: number): Promise<Player | null> {
   return data;
 }
 
-// ── Courses & Tees ────────────────────────────────────────────────────────────
+// ── Courses & Tees ────────────────────────────────────────────────────────────────────────
 
 export async function getCourses(): Promise<Course[]> {
   const { data, error } = await db()
@@ -167,7 +165,7 @@ export async function createTee(courseId: number, tee: {
   return data;
 }
 
-// ── Leagues ───────────────────────────────────────────────────────────────────
+// ── Leagues ─────────────────────────────────────────────────────────────────────────────
 
 export async function getOrCreateCurrentLeague(): Promise<League> {
   const { start, end } = weekBounds();
@@ -203,7 +201,7 @@ export async function getLeagues(): Promise<League[]> {
   return data ?? [];
 }
 
-// ── Rounds ────────────────────────────────────────────────────────────────────
+// ── Rounds ──────────────────────────────────────────────────────────────────────────────
 
 export async function getRoundsForLeague(leagueId: number): Promise<Round[]> {
   const { data, error } = await db()
@@ -266,7 +264,7 @@ export async function getAllRounds(): Promise<Round[]> {
   return data ?? [];
 }
 
-// ── Standings ─────────────────────────────────────────────────────────────────
+// ── Standings ─────────────────────────────────────────────────────────────────────────────
 
 export async function getStandings(leagueId: number): Promise<StandingRow[]> {
   const [players, rounds] = await Promise.all([
@@ -301,22 +299,25 @@ export async function getStandings(leagueId: number): Promise<StandingRow[]> {
   return rows;
 }
 
-// ── Season Standings ──────────────────────────────────────────────────────────
+// ── Season Standings ────────────────────────────────────────────────────────────────────────
 
 export async function getSeasonStandings(): Promise<SeasonStandingRow[]> {
   const [players, leagues] = await Promise.all([getPlayers(), getLeagues()]);
 
-  const pts = new Map<number, number>();
+  const wins = new Map<number, number>();
   const weeks = new Map<number, number>();
   const rounds = new Map<number, number>();
-  for (const p of players) { pts.set(p.id, 0); weeks.set(p.id, 0); rounds.set(p.id, 0); }
+  for (const p of players) { wins.set(p.id, 0); weeks.set(p.id, 0); rounds.set(p.id, 0); }
 
   await Promise.all(
     leagues.map(async l => {
       const standing = await getStandings(l.id);
       const active = standing.filter(r => r.bestNet !== null);
-      active.forEach((row, i) => {
-        pts.set(row.player.id, (pts.get(row.player.id) ?? 0) + (WEEK_POINTS[i] ?? 1));
+      if (active.length > 0) {
+        const winnerId = active[0].player.id;
+        wins.set(winnerId, (wins.get(winnerId) ?? 0) + 1);
+      }
+      active.forEach(row => {
         weeks.set(row.player.id, (weeks.get(row.player.id) ?? 0) + 1);
         rounds.set(row.player.id, (rounds.get(row.player.id) ?? 0) + row.roundsPlayed);
       });
@@ -325,14 +326,15 @@ export async function getSeasonStandings(): Promise<SeasonStandingRow[]> {
 
   const rows: SeasonStandingRow[] = players.map(player => ({
     player,
-    points: pts.get(player.id) ?? 0,
+    weeksWon: wins.get(player.id) ?? 0,
     weeksPlayed: weeks.get(player.id) ?? 0,
     totalRounds: rounds.get(player.id) ?? 0,
     rank: 0,
   }));
 
   rows.sort((a, b) => {
-    if (b.points !== a.points) return b.points - a.points;
+    if (b.weeksWon !== a.weeksWon) return b.weeksWon - a.weeksWon;
+    if (b.weeksPlayed !== a.weeksPlayed) return b.weeksPlayed - a.weeksPlayed;
     return a.player.name.localeCompare(b.player.name);
   });
 

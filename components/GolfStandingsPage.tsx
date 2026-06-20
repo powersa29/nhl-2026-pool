@@ -47,7 +47,7 @@ export default function GolfStandingsPage({
   }
 
   const isSeason = view === 'season';
-  const topSeason = seasonStandings.find(r => r.points > 0);
+  const topSeason = seasonStandings.find(r => r.weeksWon > 0);
 
   return (
     <>
@@ -58,12 +58,12 @@ export default function GolfStandingsPage({
         </h1>
         <p className="hero-sub">
           9-hole stroke play, handicap-adjusted net scoring. Up to 4 rounds per week —
-          your best net score counts. Points accumulate all season.
+          your best net score counts.
         </p>
         <div className="hero-stats">
           <div className="stat-pill"><div className="k">{stats.totalPlayers}</div><div className="l">Players</div></div>
           <div className="stat-pill"><div className="k">{stats.totalRounds}</div><div className="l">Rounds this week</div></div>
-          {topSeason && <div className="stat-pill"><div className="k">{topSeason.points}</div><div className="l">Season leader pts</div></div>}
+          {topSeason && <div className="stat-pill"><div className="k">{topSeason.weeksWon}</div><div className="l">Most week wins</div></div>}
         </div>
         <div style={{ marginTop: 20, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <Link href="/record"><button className="btn" style={{ flex: '1 1 auto' }}>+ Record a Round</button></Link>
@@ -106,7 +106,6 @@ export default function GolfStandingsPage({
       </div>
 
       <div style={{ marginTop: 14, fontSize: 12, color: 'var(--muted)', textAlign: 'right' }}>
-        Season points: 1st=10 · 2nd=7 · 3rd=5 · 4th=4 · 5th=3 · 6th=2 · 7th+=1 &nbsp;|&nbsp;
         Net = Gross − Course Handicap (9 holes)
       </div>
     </>
@@ -114,7 +113,7 @@ export default function GolfStandingsPage({
 }
 
 function SeasonTable({ standings }: { standings: SeasonStandingRow[] }) {
-  if (standings.every(r => r.points === 0)) {
+  if (standings.every(r => r.weeksPlayed === 0)) {
     return (
       <div className="empty-state">
         No rounds recorded yet — <Link href="/record" style={{ color: 'var(--green)' }}>record a round</Link> to start the season.
@@ -126,15 +125,15 @@ function SeasonTable({ standings }: { standings: SeasonStandingRow[] }) {
     <div className="lb">
       <div className="th">Rank</div>
       <div className="th">Player</div>
-      <div className="th">Points</div>
-      <div className="th col-hcp">Weeks</div>
+      <div className="th">Weeks Won</div>
+      <div className="th col-hcp">Played</div>
       <div className="th col-rounds">Rounds</div>
       <div className="th col-course"></div>
 
       {standings.map((row, i) => (
-        <div key={row.player.id} className={`row ${i === 0 && row.points > 0 ? 'top1' : i === 1 && row.points > 0 ? 'top2' : i === 2 && row.points > 0 ? 'top3' : ''}`}>
+        <div key={row.player.id} className={`row ${i === 0 && row.weeksWon > 0 ? 'top1' : i === 1 && row.weeksWon > 0 ? 'top2' : i === 2 && row.weeksWon > 0 ? 'top3' : ''}`}>
           <div className="td">
-            <div className={`rank-badge ${row.points === 0 ? 'no-score' : i === 0 ? 'rank1' : i === 1 ? 'rank2' : i === 2 ? 'rank3' : ''}`}>
+            <div className={`rank-badge ${row.weeksPlayed === 0 ? 'no-score' : i === 0 && row.weeksWon > 0 ? 'rank1' : i === 1 && row.weeksWon > 0 ? 'rank2' : i === 2 && row.weeksWon > 0 ? 'rank3' : ''}`}>
               {row.rank}
             </div>
           </div>
@@ -146,9 +145,9 @@ function SeasonTable({ standings }: { standings: SeasonStandingRow[] }) {
             </div>
           </div>
           <div className="td">
-            {row.points > 0
-              ? <span className="net-score">{row.points} pts</span>
-              : <span className="net-score none">no rounds</span>}
+            {row.weeksWon > 0
+              ? <span className="net-score">{row.weeksWon}W</span>
+              : <span className="net-score none">{row.weeksPlayed > 0 ? '—' : 'no rounds'}</span>}
           </div>
           <div className="td col-hcp">
             <span style={{ fontFamily: 'var(--mono)', fontSize: 13 }}>{row.weeksPlayed}</span>
