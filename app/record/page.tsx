@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import type { Player, Course, Tee } from '@/lib/golf-db';
-import { courseHandicap9, netScore } from '@/lib/golf-scoring';
+import { courseHandicap9, netScore, weekLabel } from '@/lib/golf-scoring';
 import AddCourseModal from '@/components/AddCourseModal';
 import HotdogCelebration from '@/components/HotdogCelebration';
 
@@ -20,6 +20,7 @@ export default function RecordPage() {
   const [teeId, setTeeId] = useState('');
   const [grossScore, setGrossScore] = useState('');
 
+  const [playedAt, setPlayedAt] = useState(() => new Date().toISOString().slice(0, 10));
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
@@ -58,6 +59,10 @@ export default function RecordPage() {
       .then(d => setRoundsThisWeek(d.count));
   }, [playerId]);
 
+  const selectedWeekLabel = weekLabel(playedAt);
+  const today = new Date().toISOString().slice(0, 10);
+  const isBackdated = playedAt < today;
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
@@ -73,6 +78,7 @@ export default function RecordPage() {
         course_id: Number(courseId),
         tee_id: Number(teeId),
         gross_score: Number(grossScore),
+        played_at: playedAt,
       }),
     });
     const data = await res.json();
@@ -89,6 +95,7 @@ export default function RecordPage() {
     setCourseId('');
     setError('');
     setRoundsThisWeek(null);
+    setPlayedAt(new Date().toISOString().slice(0, 10));
   }
 
   async function handleCourseAdded(courseId: number) {
@@ -138,10 +145,8 @@ export default function RecordPage() {
             ))}
           </select>
           {roundsThisWeek !== null && (
-            <div className={`hint ${roundsThisWeek >= 4 ? 'error-banner' : ''}`} style={{ marginTop: 6 }}>
-              {roundsThisWeek >= 4
-                ? 'Maximum 4 rounds already recorded this week.'
-                : `${roundsThisWeek}/4 rounds recorded this week. ${4 - roundsThisWeek} remaining.`}
+            <div className="hint" style={{ marginTop: 6 }}>
+              {roundsThisWeek} round{roundsThisWeek !== 1 ? 's' : ''} recorded this week — best net score counts.
             </div>
           )}
         </div>
@@ -224,6 +229,24 @@ export default function RecordPage() {
           </div>
         )}
 
+        {/* Date played */}
+        <div className="form-row">
+          <label>Date Played</label>
+          <input
+            className="input"
+            type="date"
+            value={playedAt}
+            max={today}
+            onChange={e => setPlayedAt(e.target.value)}
+            style={{ maxWidth: 200 }}
+          />
+          {isBackdated && (
+            <div className="hint" style={{ marginTop: 6 }}>
+              Back-dated — will count in the week of <strong>{selectedWeekLabel}</strong>.
+            </div>
+          )}
+        </div>
+
         {/* Score */}
         <div className="form-row">
           <label>9-Hole Gross Score</label>
@@ -253,7 +276,7 @@ export default function RecordPage() {
           <button
             type="submit"
             className="btn"
-            disabled={submitting || roundsThisWeek === 4}
+            disabled={submitting}
           >
             {submitting ? 'Saving…' : 'Save Round →'}
           </button>

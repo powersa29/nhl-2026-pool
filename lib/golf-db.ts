@@ -167,8 +167,8 @@ export async function createTee(courseId: number, tee: {
 
 // ── Leagues ─────────────────────────────────────────────────────────────────────────────
 
-export async function getOrCreateCurrentLeague(): Promise<League> {
-  const { start, end } = weekBounds();
+export async function getOrCreateLeagueForDate(date: Date = new Date()): Promise<League> {
+  const { start, end } = weekBounds(date);
   const startStr = toDateStr(start);
   const endStr = toDateStr(end);
 
@@ -190,6 +190,10 @@ export async function getOrCreateCurrentLeague(): Promise<League> {
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function getOrCreateCurrentLeague(): Promise<League> {
+  return getOrCreateLeagueForDate(new Date());
 }
 
 export async function getLeagues(): Promise<League[]> {

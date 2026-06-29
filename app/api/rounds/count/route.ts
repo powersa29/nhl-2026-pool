@@ -6,5 +6,5 @@ export async function GET(req: NextRequest) {
   if (!playerId) return NextResponse.json({ count: 0 });
   const league = await getOrCreateCurrentLeague();
   const count = await countPlayerRoundsThisWeek(playerId, league.id);
-  return NextResponse.json({ count, leagueId: league.id, max: 4 });
+  return NextResponse.json({ count, leagueId: league.id });
 }

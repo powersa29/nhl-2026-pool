@@ -57,8 +57,8 @@ export default function GolfStandingsPage({
           Weekly<br /><span className="accent">Golf League</span>
         </h1>
         <p className="hero-sub">
-          9-hole stroke play, handicap-adjusted net scoring. Up to 4 rounds per week —
-          your best net score counts.
+          9-hole stroke play, handicap-adjusted net scoring. Play as many rounds as you
+          want — your best net score each week counts.
         </p>
         <div className="hero-stats">
           <div className="stat-pill"><div className="k">{stats.totalPlayers}</div><div className="l">Players</div></div>
@@ -202,8 +202,8 @@ function WeekTable({ standings }: { standings: StandingRow[] }) {
             <span style={{ fontFamily: 'var(--mono)', fontSize: 13 }}>{row.player.handicap_index.toFixed(1)}</span>
           </div>
           <div className="td col-rounds">
-            <span style={{ color: row.roundsPlayed >= 4 ? 'var(--green)' : 'var(--ink)', fontWeight: 600 }}>
-              {row.roundsPlayed}/4
+            <span style={{ fontWeight: 600 }}>
+              {row.roundsPlayed}
             </span>
           </div>
           <div className="td col-course">

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { insertRound, deleteRound, getOrCreateCurrentLeague, countPlayerRoundsThisWeek, getRoundsForLeague, getRoundsForPlayer, updateHandicap } from '@/lib/golf-db';
-import { toDateStr, weekBounds, scoreDifferential9, calcHandicapIndex } from '@/lib/golf-scoring';
+import { insertRound, deleteRound, getOrCreateLeagueForDate, getRoundsForLeague, getRoundsForPlayer, updateHandicap } from '@/lib/golf-db';
+import { toDateStr, scoreDifferential9, calcHandicapIndex } from '@/lib/golf-scoring';
 
 const ADMIN_TOKEN = 'GlizzyAdmin2026';
 
@@ -13,17 +13,20 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { player_id, course_id, tee_id, gross_score } = body;
+  const { player_id, course_id, tee_id, gross_score, played_at: playedAtRaw } = body;
 
   if (!player_id || !course_id || !tee_id || !gross_score)
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   if (gross_score < 18 || gross_score > 72)
     return NextResponse.json({ error: 'Gross score must be between 18 and 72' }, { status: 400 });
 
-  const league = await getOrCreateCurrentLeague();
-  const count = await countPlayerRoundsThisWeek(Number(player_id), league.id);
-  if (count >= 4)
-    return NextResponse.json({ error: 'Maximum 4 rounds per week reached' }, { status: 400 });
+  const playedAt = playedAtRaw ? new Date(playedAtRaw + 'T12:00:00Z') : new Date();
+  if (isNaN(playedAt.getTime()))
+    return NextResponse.json({ error: 'Invalid date' }, { status: 400 });
+  if (playedAt > new Date())
+    return NextResponse.json({ error: 'Date cannot be in the future' }, { status: 400 });
+
+  const league = await getOrCreateLeagueForDate(playedAt);
 
   const round = await insertRound({
     player_id: Number(player_id),
@@ -31,7 +34,7 @@ export async function POST(req: NextRequest) {
     tee_id: Number(tee_id),
     league_id: league.id,
     gross_score: Number(gross_score),
-    played_at: toDateStr(new Date()),
+    played_at: toDateStr(playedAt),
   });
 
   // Recalculate WHS handicap index from all recorded rounds
