@@ -291,11 +291,16 @@ export async function getStandings(leagueId: number): Promise<StandingRow[]> {
     return { player, rounds: playerRounds, bestNet, roundsPlayed: playerRounds.length, rank: 0 };
   });
 
-  // Sort: players with scores first (ascending net), then no-scores alphabetically
+  // Sort: players with scores first (ascending net), tiebreaker = fewer rounds, then alphabetical
   rows.sort((a, b) => {
-    if (a.bestNet !== null && b.bestNet !== null) return a.bestNet - b.bestNet;
-    if (a.bestNet !== null) return -1;
-    if (b.bestNet !== null) return 1;
+    if (a.bestNet !== null && b.bestNet !== null) {
+      if (a.bestNet !== b.bestNet) return a.bestNet - b.bestNet;
+      if (a.roundsPlayed !== b.roundsPlayed) return a.roundsPlayed - b.roundsPlayed;
+    } else if (a.bestNet !== null) {
+      return -1;
+    } else if (b.bestNet !== null) {
+      return 1;
+    }
     return a.player.name.localeCompare(b.player.name);
   });
 
