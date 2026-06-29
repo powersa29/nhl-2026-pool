@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const db = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-);
+function db() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
+}
 
 export async function GET(req: NextRequest) {
   const courseId = Number(req.nextUrl.searchParams.get('courseId'));
@@ -28,7 +30,7 @@ export async function GET(req: NextRequest) {
   const lat = parseFloat(data[0].lat);
   const lng = parseFloat(data[0].lon);
 
-  await db.from('golf_courses').update({ lat, lng }).eq('id', courseId);
+  await db().from('golf_courses').update({ lat, lng }).eq('id', courseId);
 
   return NextResponse.json({ lat, lng });
 }

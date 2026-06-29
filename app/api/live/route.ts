@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const db = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-);
+function db() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
+}
 
 const STALE_MS = 30 * 60 * 1000; // hide after 30 min of no update
 
 export async function GET() {
   const since = new Date(Date.now() - STALE_MS).toISOString();
-  const { data } = await db
+  const { data } = await db()
     .from('golf_live_locations')
     .select('*')
     .eq('is_active', true)
@@ -25,7 +27,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'missing fields' }, { status: 400 });
 
   // Upsert: unique constraint on player_id
-  const { data, error } = await db
+  const { data, error } = await db()
     .from('golf_live_locations')
     .upsert({
       player_id,
@@ -47,6 +49,6 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const playerId = Number(req.nextUrl.searchParams.get('playerId'));
   if (!playerId) return NextResponse.json({ error: 'missing playerId' }, { status: 400 });
-  await db.from('golf_live_locations').update({ is_active: false }).eq('player_id', playerId);
+  await db().from('golf_live_locations').update({ is_active: false }).eq('player_id', playerId);
   return NextResponse.json({ ok: true });
 }
