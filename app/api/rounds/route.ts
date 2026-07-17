@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { insertRound, deleteRound, getOrCreateLeagueForDate, getRoundsForLeague, getRoundsForPlayer, updateHandicap } from '@/lib/golf-db';
-import { toDateStr, scoreDifferential9, calcHandicapIndex } from '@/lib/golf-scoring';
+import { toDateStr, scoreDifferential, calcHandicapIndex } from '@/lib/golf-scoring';
 
 const ADMIN_TOKEN = 'GlizzyAdmin2026';
 
@@ -13,12 +13,16 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { player_id, course_id, tee_id, gross_score, played_at: playedAtRaw } = body;
+  const { player_id, course_id, tee_id, gross_score, played_at: playedAtRaw, handicap_only, holes: holesRaw } = body;
 
   if (!player_id || !course_id || !tee_id || !gross_score)
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-  if (gross_score < 18 || gross_score > 72)
-    return NextResponse.json({ error: 'Gross score must be between 18 and 72' }, { status: 400 });
+
+  const holes: 9 | 18 = holesRaw === 18 ? 18 : 9;
+  const minScore = holes === 18 ? 36 : 18;
+  const maxScore = holes === 18 ? 160 : 72;
+  if (gross_score < minScore || gross_score > maxScore)
+    return NextResponse.json({ error: `Score must be between ${minScore} and ${maxScore}` }, { status: 400 });
 
   const playedAt = playedAtRaw ? new Date(playedAtRaw + 'T12:00:00Z') : new Date();
   if (isNaN(playedAt.getTime()))
@@ -26,22 +30,33 @@ export async function POST(req: NextRequest) {
   if (playedAt > new Date())
     return NextResponse.json({ error: 'Date cannot be in the future' }, { status: 400 });
 
-  const league = await getOrCreateLeagueForDate(playedAt);
+  // Handicap-only rounds skip weekly league assignment
+  let leagueId: number | null = null;
+  if (!handicap_only) {
+    const league = await getOrCreateLeagueForDate(playedAt);
+    leagueId = league.id;
+  }
 
   const round = await insertRound({
     player_id: Number(player_id),
     course_id: Number(course_id),
     tee_id: Number(tee_id),
-    league_id: league.id,
+    league_id: leagueId,
     gross_score: Number(gross_score),
+    holes,
     played_at: toDateStr(playedAt),
   });
 
-  // Recalculate WHS handicap index from all recorded rounds
+  // Recalculate WHS handicap index from all recorded rounds (both competition + handicap-only)
   const allRounds = await getRoundsForPlayer(Number(player_id));
   const diffs = allRounds
     .filter(r => r.golf_tees?.slope_rating && r.golf_tees?.course_rating)
-    .map(r => scoreDifferential9(r.gross_score, r.golf_tees!.course_rating, r.golf_tees!.slope_rating));
+    .map(r => scoreDifferential(
+      r.gross_score,
+      r.golf_tees!.course_rating,
+      r.golf_tees!.slope_rating,
+      (r.holes ?? 9) as 9 | 18,
+    ));
   const calc = calcHandicapIndex(diffs);
   if (calc) await updateHandicap(Number(player_id), calc.calculatedHI).catch(() => {});
 

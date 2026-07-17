@@ -15,6 +15,9 @@ export default function RecordPage() {
   const [stateFilter, setStateFilter] = useState('');
   const [showAddCourse, setShowAddCourse] = useState(false);
 
+  const [roundType, setRoundType] = useState<'competition' | 'handicap'>('competition');
+  const [holes, setHoles] = useState<9 | 18>(9);
+
   const [playerId, setPlayerId] = useState('');
   const [courseId, setCourseId] = useState('');
   const [teeId, setTeeId] = useState('');
@@ -37,31 +40,39 @@ export default function RecordPage() {
     loadCourses();
   }, []);
 
+  const isHandicap = roundType === 'handicap';
+  const effectiveHoles = isHandicap ? holes : 9;
+
   const player = players.find(p => p.id === Number(playerId));
   const filteredCourses = stateFilter ? courses.filter(c => c.state === stateFilter) : courses;
   const course = courses.find(c => c.id === Number(courseId));
   const tee = course?.tees.find(t => t.id === Number(teeId));
 
-  const previewNet = player && tee && grossScore
+  const previewNet = !isHandicap && player && tee && grossScore
     ? netScore(Number(grossScore), player.handicap_index, tee.slope_rating)
     : null;
 
-  const chcp = player && tee
+  const chcp = !isHandicap && player && tee
     ? courseHandicap9(player.handicap_index, tee.slope_rating)
     : null;
 
   const stateList = useMemo(() => [...new Set(courses.map(c => c.state))].sort(), [courses]);
 
   useEffect(() => {
-    if (!playerId) { setRoundsThisWeek(null); return; }
+    if (!playerId || isHandicap) { setRoundsThisWeek(null); return; }
     fetch(`/api/rounds/count?playerId=${playerId}`)
       .then(r => r.json())
       .then(d => setRoundsThisWeek(d.count));
-  }, [playerId]);
+  }, [playerId, isHandicap]);
 
   const selectedWeekLabel = weekLabel(playedAt);
   const today = new Date().toISOString().slice(0, 10);
   const isBackdated = playedAt < today;
+
+  const scoreMin = effectiveHoles === 18 ? 36 : 18;
+  const scoreMax = effectiveHoles === 18 ? 160 : 72;
+  const scoreLabel = effectiveHoles === 18 ? '18-Hole Gross Score' : '9-Hole Gross Score';
+  const scorePlaceholder = effectiveHoles === 18 ? 'e.g. 92' : 'e.g. 47';
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -79,13 +90,15 @@ export default function RecordPage() {
         tee_id: Number(teeId),
         gross_score: Number(grossScore),
         played_at: playedAt,
+        handicap_only: isHandicap,
+        holes: effectiveHoles,
       }),
     });
     const data = await res.json();
     setSubmitting(false);
     if (!res.ok) { setError(data.error ?? 'Something went wrong'); return; }
     setDone(true);
-    setCelebrate(true);
+    if (!isHandicap) setCelebrate(true);
   }
 
   function reset() {
@@ -98,9 +111,9 @@ export default function RecordPage() {
     setPlayedAt(new Date().toISOString().slice(0, 10));
   }
 
-  async function handleCourseAdded(courseId: number) {
+  async function handleCourseAdded(newCourseId: number) {
     await loadCourses();
-    setCourseId(String(courseId));
+    setCourseId(String(newCourseId));
     setTeeId('');
     setShowAddCourse(false);
   }
@@ -110,7 +123,10 @@ export default function RecordPage() {
       <div style={{ maxWidth: 500 }}>
         {celebrate && <HotdogCelebration onDone={() => setCelebrate(false)} />}
         <div className="success-banner" style={{ marginBottom: 20 }}>
-          Round recorded! Net score: <strong>{previewNet}</strong>
+          {isHandicap
+            ? <>Round logged! Your handicap index has been updated.</>
+            : <>Round recorded! Net score: <strong>{previewNet}</strong></>
+          }
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <button className="btn" onClick={reset}>Record Another Round</button>
@@ -129,6 +145,56 @@ export default function RecordPage() {
       </div>
 
       <form onSubmit={submit} className="form-card" style={{ maxWidth: 640 }}>
+
+        {/* Round type */}
+        <div className="form-row">
+          <label>Round Type</label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="button"
+              className={`state-tab ${roundType === 'competition' ? 'active' : ''}`}
+              onClick={() => { setRoundType('competition'); setHoles(9); setGrossScore(''); }}
+            >
+              Competition
+            </button>
+            <button
+              type="button"
+              className={`state-tab ${roundType === 'handicap' ? 'active' : ''}`}
+              onClick={() => { setRoundType('handicap'); setGrossScore(''); }}
+            >
+              Handicap Only
+            </button>
+          </div>
+          <div className="hint" style={{ marginTop: 6 }}>
+            {isHandicap
+              ? 'Counts toward your handicap index only — not entered in the weekly standings.'
+              : 'Enters you in the weekly standings. Best net score this week counts.'}
+          </div>
+        </div>
+
+        {/* Holes (handicap-only) */}
+        {isHandicap && (
+          <div className="form-row">
+            <label>Holes Played</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                className={`state-tab ${holes === 9 ? 'active' : ''}`}
+                onClick={() => { setHoles(9); setGrossScore(''); }}
+              >
+                9 Holes
+              </button>
+              <button
+                type="button"
+                className={`state-tab ${holes === 18 ? 'active' : ''}`}
+                onClick={() => { setHoles(18); setGrossScore(''); }}
+              >
+                18 Holes
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Player */}
         <div className="form-row">
           <label>Player</label>
@@ -144,7 +210,7 @@ export default function RecordPage() {
               </option>
             ))}
           </select>
-          {roundsThisWeek !== null && (
+          {roundsThisWeek !== null && !isHandicap && (
             <div className="hint" style={{ marginTop: 6 }}>
               {roundsThisWeek} round{roundsThisWeek !== 1 ? 's' : ''} recorded this week — best net score counts.
             </div>
@@ -184,7 +250,6 @@ export default function RecordPage() {
               </option>
             ))}
           </select>
-          {/* Add Course inline prompt */}
           <div style={{
             marginTop: 8, padding: '10px 14px',
             background: 'var(--ice-2)', border: '1.5px solid var(--line)',
@@ -240,7 +305,7 @@ export default function RecordPage() {
             onChange={e => setPlayedAt(e.target.value)}
             style={{ maxWidth: 200 }}
           />
-          {isBackdated && (
+          {isBackdated && !isHandicap && (
             <div className="hint" style={{ marginTop: 6 }}>
               Back-dated — will count in the week of <strong>{selectedWeekLabel}</strong>.
             </div>
@@ -249,13 +314,13 @@ export default function RecordPage() {
 
         {/* Score */}
         <div className="form-row">
-          <label>9-Hole Gross Score</label>
+          <label>{scoreLabel}</label>
           <input
             className="input"
             type="number"
-            placeholder="e.g. 47"
-            min="18"
-            max="72"
+            placeholder={scorePlaceholder}
+            min={scoreMin}
+            max={scoreMax}
             value={grossScore}
             onChange={e => setGrossScore(e.target.value)}
             style={{ maxWidth: 160 }}
@@ -273,12 +338,8 @@ export default function RecordPage() {
         {error && <div className="error-banner">{error}</div>}
 
         <div style={{ marginTop: 24 }}>
-          <button
-            type="submit"
-            className="btn"
-            disabled={submitting}
-          >
-            {submitting ? 'Saving…' : 'Save Round →'}
+          <button type="submit" className="btn" disabled={submitting}>
+            {submitting ? 'Saving…' : isHandicap ? 'Log Round →' : 'Save Round →'}
           </button>
         </div>
       </form>

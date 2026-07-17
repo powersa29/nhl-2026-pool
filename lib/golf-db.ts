@@ -49,7 +49,8 @@ export interface Round {
   player_id: number;
   course_id: number;
   tee_id: number;
-  league_id: number;
+  league_id: number | null;  // null = handicap-only round (not in weekly standings)
+  holes: number;             // 9 or 18
   gross_score: number;
   played_at: string;
   created_at: string;
@@ -241,8 +242,9 @@ export async function insertRound(payload: {
   player_id: number;
   course_id: number;
   tee_id: number;
-  league_id: number;
+  league_id: number | null;
   gross_score: number;
+  holes: number;
   played_at: string;
 }): Promise<Round> {
   const { data, error } = await db()

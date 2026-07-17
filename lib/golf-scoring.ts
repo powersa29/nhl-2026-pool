@@ -22,9 +22,26 @@ export function toDateStr(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-// Score differential for a 9-hole round, converted to 18-hole equivalent (WHS)
+// 9-hole round differential, doubled to 18-hole equivalent (WHS)
 export function scoreDifferential9(gross: number, courseRating9: number, slope: number): number {
   return ((gross - courseRating9) * 113 / slope) * 2;
+}
+
+// 18-hole round differential — uses 9-hole rating × 2 as the 18-hole course rating estimate
+export function scoreDifferential18(gross: number, courseRating9: number, slope: number): number {
+  return (gross - courseRating9 * 2) * 113 / slope;
+}
+
+// Unified differential — always returns an 18-hole equivalent value for the WHS calculation
+export function scoreDifferential(
+  gross: number,
+  courseRating9: number,
+  slope: number,
+  holes: 9 | 18 = 9,
+): number {
+  return holes === 18
+    ? scoreDifferential18(gross, courseRating9, slope)
+    : scoreDifferential9(gross, courseRating9, slope);
 }
 
 export interface HandicapCalc {
